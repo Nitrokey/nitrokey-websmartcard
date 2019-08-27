@@ -47,6 +47,19 @@ The seed is setup during initializing the device and used to derive a master key
 * Unlock - For U2F compatibility.
 * Reset - For U2F compatibility.
 
+## Questions & Answers
+
+#### Reasoning for Derived Keys
+
+Using derived keys (as opposed to residential keys) by default provides the following benefits:
+
+* For encryption use cases such as we want to enable with WebCrypt, a backup mechanism is a fundamental prerequisite. At the same time the entire solution should be as easy to use as possible. Therefore we aim to provide an easy to use backup mechanism. A seed phrase or backup phrase is the most easy mechanism we could think of. For technical reasons a backup seed demands derived keys in ECC format (not RSA). As opposed to a backup seed, a classical file backup would have these disadvantages:
+  * A backup file needs to be stored separately and (usually) protected with a passphrase.
+  * A new backup file needs to be created and stored again and again after generating a new key. 
+  * Practice proofs that backups are often not executed properly. This might result in user frustration when they can't access their encrypted data anymore.
+* Having a single or few residential keys might enable malicious websites to track users' devices which could violate their privacy. Therefore it's benefitial to assume derived keys as the default.
+* With resident keys, the amount of keys  (key storage) would be limited. As opposed to this an unlimited amount of derived keys could be used.
+
 ## Deliverables
 
 * A firmware containig the WebCrypt feature.
