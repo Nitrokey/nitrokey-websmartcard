@@ -78,7 +78,7 @@ Using derived keys (as opposed to residential keys) by default provides the foll
 ### A. Firmware	
 #### I. Establishing PoC	
 
-* Communication layer over FIDO2 -	OnlyKey offers U2F communication. We have no ready FIDO2 transport layer yet (only U2F). Estimation assumes no code reuse.
+* Communication layer over FIDO2. Estimation assumes no code reuse.
 * Initial design and structure for commands -	Setting up code structure and design for commands and implementations
 * Initialize and restore from seed -	Master seed handling. Additional time for security analysis. Basic tests included.
 * Generate non-resident key -	Key generation. Additional time for security analysis. Basic tests included.
