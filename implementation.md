@@ -29,13 +29,42 @@ where for the given command:
 - column `Bt`, short from button, marks touch-button press requirement after the command is called, to proceed further.
 
 
-## Initialize
+## Initialize (INITIALIZE_SEED)
  
-## Restore from seed
+## Restore from seed (RESTORE_FROM_SEED)
 
 ## Generate non-resident key
 
+### From hash (GENERATE_KEY_FROM_DATA)
+
+For the actual key generation the FIDO U2F key generation mechanism was reused. The received Argon2 hash is mixed through PBKDF2 with device's salt, then HMAC'ed with the Webcrypt's master key along with the authentication tag. Finally it is encrypted through another secret key. 
+
+```text
+# Browser
+hash[32] = Argon2(passphrase)
+# Device
+hash_f[32] = PBKDF2(hash, salt, 100)
+key_pub, key_priv = wc_new_keypair(hash_f, appid)
+```
+
+Reused FIDO U2F implementation below:
+
+```text
+# wc_new_keypair() implementation
+tag[16] = HMAC(WC_MASTER_KEY, hash_f|appid)
+key_priv_plain[32] = HMAC(WC_MASTER_KEY, tag|hash_f)
+key_priv[32] = AES(WC_MASTER_ENC_KEY, key_priv_plain)
+key_pub[64] = ECC_compute_public_key(key_priv)
+```
+
+Work in progress.
+In discussion: to remove the additional master encryption secret, and replace HMAC with AES GCM or ChaCha20/ChaCha20-Poly1305. Introduce MAC-then-encrypt or MAC-then-pad-then-encrypt. 
+
+### Random (GENERATE_KEY)
+Random key generation follows the same path as from hash with the excerpt, that instead of the hash a randomized 32 bytes value is used.
+
 ## Read public key of resident keys
+To be done. Command not implemented yet.
 
 ## Sign
 (to_be_signed_data_hash, public_key, hash, origin)
