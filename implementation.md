@@ -373,8 +373,13 @@ Magic value is:
 
 
 
-# FIDO2 relationship
-On FIDO2 factory reset the Nitrokey Webcrypt's secrets should be reinitialized to random values.
+# FIDO2 actions relationship
+Following are connections between the FIDO2 and Nitrokey Webcrypt:
+- On FIDO2 factory reset the Nitrokey Webcrypt's secrets should be reinitialized to random values. 
+- The PIN is shared between the FIDO2 and Nitrokey Webcrypt. 
+- The secrets are separeted, and never cross-used between FIDO2 and Nitrokey Webcrypt. 
+- The FIDO2 PIN attempt counter should decrease on failed login over Nitrokey Webcrypt.
+- The FIDO2 use counter should not change during the use of Nitrokey Webcrypt.
 
 # JS handling
 
