@@ -145,6 +145,8 @@ Both commands return the same errors listed below.
 ### Random (GENERATE_KEY)
 Random key generation follows the same path as from the hash, except that instead of the `key_data_raw` a randomized 32 bytes value is used, sourced from the device's HWRNG. Resulting KEYHANDLE can be stored off-device for the later use, e.g. locally in the browser (localStorage / cookie), or on a remote server. 
 
+See *From hash (GENERATE_KEY_FROM_DATA)* chapter for the full pseudocode.
+
 ```text
 # Device
 random_data[32] = HWRNG(32)
