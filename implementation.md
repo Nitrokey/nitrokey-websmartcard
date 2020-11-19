@@ -38,7 +38,7 @@ where for the given command:
 | --- | ------ | ---------- | ---------- | --- | --- |
 | 10 | INITIALIZE_SEED | None | `{MASTER,SALT}` | + | + |
 
-Sets random values (sourced from the HWRNG) to the Webcrypt's secrets - master key and PBKDF2 salt - and returns them to the caller. 
+Sets random values (sourced from the HWRNG) to the Nitrokey Webcrypt's secrets - master key and PBKDF2 salt - and returns them to the caller. 
 
 ### Input description
 None
@@ -46,7 +46,7 @@ None
 ### Output description
 | Field | Size [B] | Description |
 | --- | ------ | ---------- | 
-| `MASTER` | 32 | Webcrypt's master secret |
+| `MASTER` | 32 | Nitrokey Webcrypt's master secret |
 | `SALT` | 8 | PBKDF2 salt |
 
 
@@ -64,12 +64,12 @@ None
 | --- | ------ | ---------- | ---------- | --- | --- |
 | 11 | RESTORE_FROM_SEED | `{MASTER,SALT}` | `{HASH}` | + | + |
 
-Sets Webcrypt's secret values as received from the caller. For verification calculates SHA256 hash of the input and returns as `HASH`. 
+Sets Nitrokey Webcrypt's secret values as received from the caller. For verification calculates SHA256 hash of the input and returns as `HASH`. 
 
 ### Input description
 | Field | Size [B] | Description |
 | --- | ------ | ---------- | 
-| `MASTER` | 32 | Webcrypt's master secret |
+| `MASTER` | 32 | Nitrokey Webcrypt's master secret |
 | `SALT` | 8 | PBKDF2 salt |
 
 ### Output description
@@ -97,7 +97,7 @@ Sets Webcrypt's secret values as received from the caller. For verification calc
 
 ### From hash (GENERATE_KEY_FROM_DATA)
 
-For the actual key generation the FIDO U2F key generation and wrapping mechanism was reused. The passphrase is processed through a hash function (e.g. Argon2) with known parameters client side, and the hash result is sent to the device. The received hash is mixed through PBKDF2 with device's salt, then HMAC'ed with the Webcrypt's master key `WC_MASTER_KEY` along with the authentication tag. Finally it is encrypted through another secret key - `WC_MASTER_ENC_KEY`. 
+For the actual key generation the FIDO U2F key generation and wrapping mechanism was reused. The passphrase is processed through a hash function (e.g. Argon2) with known parameters client side, and the hash result is sent to the device. The received hash is mixed through PBKDF2 with device's salt, then HMAC'ed with the Nitrokey Webcrypt's master key `WC_MASTER_KEY` along with the authentication tag. Finally it is encrypted through another secret key - `WC_MASTER_ENC_KEY`. 
 
 ```text
 # Browser
@@ -294,7 +294,7 @@ None
 | Field | Size [B] | Description |
 | --- | ------ | ---------- | 
 | `UNLOCKED` | 1 | FIDO U2F transport only - whether user has logged in with `LOGIN` command (Milestone 4) |
-| `VERSION` | 1 | implemented Webcrypt's version |
+| `VERSION` | 1 | implemented Nitrokey Webcrypt's version |
 | `SLOTS` | 1 | number of available Resident Keys slots |
 | `PIN_ATTEMPTS` | 1 | FIDO2 PIN attempt counter's current value |
 
@@ -324,7 +324,7 @@ These test commands are introduced to help in the development of the client appl
 `TEST_PING` - send and receive data for transport tests (loopback). 
 
 Not implemented at the moment:
-- `TEST_CLEAR` - clear current Webcrypt's state;
+- `TEST_CLEAR` - clear current Nitrokey Webcrypt's state;
 - `TEST_REBOOT` - reboot device.
 
 
@@ -334,7 +334,7 @@ Not implemented at the moment:
 
 # Protocol
 
-Communication is based on the [Webauthn] / [FIDO2] API, which by itself allows to communicate with FIDO Security Keys in FIDO2 enabled browsers on all platforms, as well as through NFC and Bluetooth. Such feature is here reused as a an universal communication tunnel to the Webcrypt enabled device, making it plug-and-play and working out of the box with many configurations.
+Communication is based on the [Webauthn] / [FIDO2] API, which by itself allows to communicate with FIDO Security Keys in FIDO2 enabled browsers on all platforms, as well as through NFC and Bluetooth. Such feature is here reused as a an universal communication tunnel to the Nitrokey Webcrypt enabled device, making it plug-and-play and working out of the box with many configurations.
 
 This chapter is still a work in progress.
 
@@ -343,21 +343,21 @@ This chapter is still a work in progress.
 
 ## Overview
 
-Each Webcrypt's request is sent over FIDO2 using MakeAssertion operation. It allows to transfer 255 bytes to the device, and receive 73 bytes back. The data fields used are:
+Each Nitrokey Webcrypt's request is sent over FIDO2 using MakeAssertion operation. It allows to transfer 255 bytes to the device, and receive 73 bytes back. The data fields used are:
 - `key handle` for sending to device;
 - `signature` for receiving from device.
 
 ## Commands
 For low-level communication two commands are required:
-- `WRITE` - to write to the Webcrypt's incoming buffer on the device;
-- `READ` - to read from the Webcrypt's result buffer on the device; 
+- `WRITE` - to write to the Nitrokey Webcrypt's incoming buffer on the device;
+- `READ` - to read from the Nitrokey Webcrypt's result buffer on the device; 
 
 
 ### Packet structure
 | Offset | Length | Mnemonic | Comments |
 | ------ | ------ | -------  |  ------- |
 | 0 | 1 | WEBCRYPT_CONST | Always equal to `0x22`. |
-| 1 | 14 | NULL_HEADER | Webcrypt's magic value to recognize extension over FIDO2 |
+| 1 | 14 | NULL_HEADER | Nitrokey Webcrypt's magic value to recognize extension over FIDO2 |
 | 15 | 1 | COMM_ID | WRITE (`0x01`) or READ (`0x02`) |
 | 16 | 1 | PACKET_NUM | This packet number, 0-255 |
 | 17 | 1 | PACKET_CNT | Total packet count, 0-255 |
@@ -372,9 +372,14 @@ Magic value is:
 
 
 # FIDO2 relationship
-On FIDO2 factory reset the Webcrypt's secrets should be reinitialized to random values.
+On FIDO2 factory reset the Nitrokey Webcrypt's secrets should be reinitialized to random values.
 
 # JS handling
+
+Javascript interface reuses regular FIDO2 calls realized through `navigator.credentials.get()`.
+See details at [Webauthn-intro]. 
+
+[Webauthn-intro]: https://www.w3.org/TR/webauthn/#intro
 
 ```typescript
 
