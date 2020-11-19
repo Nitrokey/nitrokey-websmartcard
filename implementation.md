@@ -1,6 +1,8 @@
 # Nitrokey Webcrypt Documentation
 
-This is a documentation of the implemented Nitrokey Webcrypt interface in the Nitrokey FIDO2. Below a high level description of the commands, as well as low-level protocol details can be found. 
+This is a documentation of the implemented Nitrokey Webcrypt Milestone 1 interface in the Nitrokey FIDO2. Below a high level description of the commands, as well as low-level protocol details can be found. 
+
+Note: this implementation is early and is subject to change.
 
 ## Overview table
 
@@ -8,20 +10,20 @@ This is a documentation of the implemented Nitrokey Webcrypt interface in the Ni
 
 | ID | Mnemonic | Parameters | Returns | Au | Bt |
 | --- | ------ | ---------- | ---------- | --- | --- |
-| 0 | STATUS | None | `{UNLOCKED,VERSION,SLOTS,PIN_ATTEMPTS}` | - | - |
-| 1 | TEST_PING | Any / Raw | Any / Raw | - | - |
-| 2 | TEST_CLEAR | None | None | - | - |
-| 3 | TEST_REBOOT | None | None | - | - |
-| 4 | LOGIN | TBD | TBD | - | + |
-| 5 | LOGOUT | None | None | - | - |
-| 6 | FACTORY_RESET | None | None | - | + |
-| 7 | PIN_ATTEMPTS | None | `{PIN_ATTEMPTS}` | - | - |
-| 10 | INITIALIZE_SEED | None | `{MASTER,SALT}` | + | + |
-| 11 | RESTORE_FROM_SEED | `{MASTER,SALT}` | `{HASH}` | + | + |
-| 12 | GENERATE_KEY | None | `{PUBKEY,KEYHANDLE}` | + | - |
-| 13 | SIGN | `{HASH,KEYHANDLE}` | `{SIGNATURE,INHASH}` | + | - |
-| 14 | DECRYPT | `{DATA,KEYHANDLE,HMAC,ECCEKEY}` | `{DATA}` | + | - |
-| 15 | GENERATE_KEY_FROM_DATA | `{HASH}` | `{PUBKEY,KEYHANDLE}` | + | - |
+| 0x0 | STATUS | None | `{UNLOCKED,VERSION,SLOTS,PIN_ATTEMPTS}` | - | - |
+| 0x1 | TEST_PING | Any / Raw | Any / Raw | - | - |
+| 0x2 | TEST_CLEAR | None | None | - | - |
+| 0x3 | TEST_REBOOT | None | None | - | - |
+| 0x4 | LOGIN | TBD | TBD | - | + |
+| 0x5 | LOGOUT | None | None | - | - |
+| 0x6 | FACTORY_RESET | None | None | - | + |
+| 0x7 | PIN_ATTEMPTS | None | `{PIN_ATTEMPTS}` | - | - |
+| 0x10 | INITIALIZE_SEED | None | `{MASTER,SALT}` | + | + |
+| 0x11 | RESTORE_FROM_SEED | `{MASTER,SALT}` | `{HASH}` | + | + |
+| 0x12 | GENERATE_KEY | None | `{PUBKEY,KEYHANDLE}` | + | - |
+| 0x13 | SIGN | `{HASH,KEYHANDLE}` | `{SIGNATURE,INHASH}` | + | - |
+| 0x14 | DECRYPT | `{DATA,KEYHANDLE,HMAC,ECCEKEY}` | `{DATA}` | + | - |
+| 0x15 | GENERATE_KEY_FROM_DATA | `{HASH}` | `{PUBKEY,KEYHANDLE}` | + | - |
 
 where for the given command:
 - ID is a hexadecimal integer;
@@ -36,7 +38,7 @@ where for the given command:
 ## Initialize (INITIALIZE_SEED)
 | ID | Mnemonic | Parameters | Returns | Au | Bt |
 | --- | ------ | ---------- | ---------- | --- | --- |
-| 10 | INITIALIZE_SEED | None | `{MASTER,SALT}` | + | + |
+| 0x10 | INITIALIZE_SEED | None | `{MASTER,SALT}` | + | + |
 
 Sets random values (sourced from the HWRNG) to the Nitrokey Webcrypt's secrets - master key and PBKDF2 salt - and returns them to the caller. 
 
@@ -62,7 +64,7 @@ None
 ## Restore from seed (RESTORE_FROM_SEED)
 | ID | Mnemonic | Parameters | Returns | Au | Bt |
 | --- | ------ | ---------- | ---------- | --- | --- |
-| 11 | RESTORE_FROM_SEED | `{MASTER,SALT}` | `{HASH}` | + | + |
+| 0x11 | RESTORE_FROM_SEED | `{MASTER,SALT}` | `{HASH}` | + | + |
 
 Sets Nitrokey Webcrypt's secret values as received from the caller. For verification calculates SHA256 hash of the input and returns as `HASH`. 
 
@@ -91,8 +93,8 @@ Sets Nitrokey Webcrypt's secret values as received from the caller. For verifica
 ## Generate non-resident key
 | ID | Mnemonic | Parameters | Returns | Au | Bt |
 | --- | ------ | ---------- | ---------- | --- | --- |
-| 12 | GENERATE_KEY | None | `{PUBKEY,KEYHANDLE}` | + | - |
-| 15 | GENERATE_KEY_FROM_DATA | `{HASH}` | `{PUBKEY,KEYHANDLE}` | + | - |
+| 0x12 | GENERATE_KEY | None | `{PUBKEY,KEYHANDLE}` | + | - |
+| 0x15 | GENERATE_KEY_FROM_DATA | `{HASH}` | `{PUBKEY,KEYHANDLE}` | + | - |
 
 
 ### From hash (GENERATE_KEY_FROM_DATA)
@@ -191,7 +193,7 @@ To be done (Milestone 3). Command not implemented yet.
 
 | ID | Mnemonic | Parameters | Returns | Au | Bt |
 | --- | ------ | ---------- | ---------- | --- | --- |
-| 13 | SIGN | `{HASH,KEYHANDLE}` | `{SIGNATURE,INHASH}` | + | - |
+| 0x13 | SIGN | `{HASH,KEYHANDLE}` | `{SIGNATURE,INHASH}` | + | - |
 
 Using key encoded in `KEYHANDLE` parameter command makes signature over the input hash `HASH` using ECDSA. Returns `SIGNATURE` as a result, as well as the sent hash named `INHASH`. 
 The curve used by default is `secp256r1` (NIST P-256 Random). 
@@ -233,7 +235,7 @@ To implement:
 ## Decrypt
 | ID | Mnemonic | Parameters | Returns | Au | Bt |
 | --- | ------ | ---------- | ---------- | --- | --- |
-| 14 | DECRYPT | `{DATA,KEYHANDLE,HMAC,ECCEKEY}` | `{DATA}` | + | - |
+| 0x14 | DECRYPT | `{DATA,KEYHANDLE,HMAC,ECCEKEY}` | `{DATA}` | + | - |
 
 Decrypts data given in the `DATA` field, using `KEYHANDLE` key handle for regenerating the private key, and `ECCEKEY` ephemeral ECC public key for deriving the shared secret. Before that command verifies the data using calculating HMAC over all the fields and comparing with `HMAC`.
 Requires PKCS#7 ([RFC 5652]) padded data to the length of multiple of 32.
@@ -281,7 +283,7 @@ plaintext = AES256(shared_secret, DATA)
 ## Status 
 | ID | Mnemonic | Parameters | Returns | Au | Bt |
 | --- | ------ | ---------- | ---------- | --- | --- |
-| 0 | STATUS | None | `{UNLOCKED,VERSION,SLOTS,PIN_ATTEMPTS}` | - | - |
+| 0x0 | STATUS | None | `{UNLOCKED,VERSION,SLOTS,PIN_ATTEMPTS}` | - | - |
 
 
 Command requires authentication: no.
@@ -316,9 +318,9 @@ To be done (Milestone 3). Command not implemented yet.
 
 | ID | Mnemonic | Parameters | Returns | Au | Bt |
 | --- | ------ | ---------- | ---------- | --- | --- |
-| 1 | TEST_PING | Any / Raw | Any / Raw | - | - |
-| 2 | TEST_CLEAR | None | None | - | - |
-| 3 | TEST_REBOOT | None | None | - | - |
+| 0x1 | TEST_PING | Any / Raw | Any / Raw | - | - |
+| 0x2 | TEST_CLEAR | None | None | - | - |
+| 0x3 | TEST_REBOOT | None | None | - | - |
 
 These test commands are introduced to help in the development of the client applications, and are available only in the development version of the firmware:
 `TEST_PING` - send and receive data for transport tests (loopback). 
@@ -377,7 +379,8 @@ On FIDO2 factory reset the Nitrokey Webcrypt's secrets should be reinitialized t
 # JS handling
 
 Javascript interface reuses regular FIDO2 calls realized through `navigator.credentials.get()`.
-See details at [Webauthn-intro]. 
+See details at [Webauthn-intro].
+Encoding and decoding functions will be shared at a later stage (Milestone 7). 
 
 [Webauthn-intro]: https://www.w3.org/TR/webauthn/#intro
 
