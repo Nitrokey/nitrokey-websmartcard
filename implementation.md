@@ -401,7 +401,8 @@ Encoding and decoding functions will be shared at a later stage (Milestone 7).
           type: 'public-key',
       }],
       timeout: timeout,
-      userVerification: "discouraged"
+      userVerification: "required"  // for FIDO2 PIN verification
+      // userVerification: "discouraged"    // for FIDO U2F compatibility
   }
 
   try {
