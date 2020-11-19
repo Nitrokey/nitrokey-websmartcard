@@ -1,4 +1,6 @@
-# High level description
+# Nitrokey Webcrypt Documentation
+
+This is a documentation of the implemented Nitrokey Webcrypt interface in the Nitrokey FIDO2. Below a high level description of the commands, as well as low-level protocol details can be found. 
 
 ## Overview table
 
@@ -283,7 +285,7 @@ plaintext = AES256(shared_secret, DATA)
 
 
 Command requires authentication: no.
-
+Work in progress.
 
 ### Input description
 None
@@ -332,17 +334,71 @@ Not implemented at the moment:
 
 # Protocol
 
+Communication is based on the [Webauthn] / [FIDO2] API, which by itself allows to communicate with FIDO Security Keys in FIDO2 enabled browsers on all platforms, as well as through NFC and Bluetooth. Such feature is here reused as a an universal communication tunnel to the Webcrypt enabled device, making it plug-and-play and working out of the box with many configurations.
+
+This chapter is still a work in progress.
+
+[Webauthn]: https://www.w3.org/TR/webauthn/
+[FIDO2]: https://fidoalliance.org/specifications/
+
 ## Overview
 
+Each Webcrypt's request is sent over FIDO2 using MakeAssertion operation. It allows to transfer 255 bytes to the device, and receive 73 bytes back. The data fields used are:
+- `key handle` for sending to device;
+- `signature` for receiving from device.
+
 ## Commands
+For low-level communication two commands are required:
+- `WRITE` - to write to the Webcrypt's incoming buffer on the device;
+- `READ` - to read from the Webcrypt's result buffer on the device; 
+
+
+### Packet structure
+| Offset | Length | Mnemonic | Comments |
+| ------ | ------ | -------  |  ------- |
+| 0 | 1 | WEBCRYPT_CONST | Always equal to `0x22`. |
+| 1 | 14 | NULL_HEADER | Webcrypt's magic value to recognize extension over FIDO2 |
+| 15 | 1 | COMM_ID | WRITE (`0x01`) or READ (`0x02`) |
+| 16 | 1 | PACKET_NUM | This packet number, 0-255 |
+| 17 | 1 | PACKET_CNT | Total packet count, 0-255 |
+| 18 | 1 | CHUNK_SIZE | Size of the data chunk, 0-255|
+| 19 | 1 | CHUNK_LEN | Length of the given data chunk, 0-CHUNK_SIZE |
+| 20 | CHUNK_LEN | DATA | Data to send  |
+
+Having dynamic `CHUNK_SIZE` allows to change the communication parameters on the fly, and depending on the platform conditions.
+Magic value is:
+- `00 00 00 8C 27 90 f6 00 00`
+
 
 
 # FIDO2 relationship
-On FIDO2 factory reset Webcrypt's secrets are reinitialized to random values.
+On FIDO2 factory reset the Webcrypt's secrets should be reinitialized to random values.
 
 # JS handling
 
+```typescript
 
-# TODO
-1. Describe error codes for commands
-2. Add some diagrams
+  const keyhandle = encode_ctaphid_request_as_keyhandle(cmd, addr, data);
+  const challenge = window.crypto.getRandomValues(new Uint8Array(32));
+
+  const request_options:PublicKeyCredentialRequestOptions = {
+      challenge: challenge,
+      allowCredentials: [{
+          id: keyhandle,
+          type: 'public-key',
+      }],
+      timeout: timeout,
+      userVerification: "discouraged"
+  }
+
+  try {
+        const result = await navigator.credentials.get({
+            publicKey: request_options
+        });
+        const response = decode_ctaphid_response_from_signature(assertion.response!);
+        return response.data;
+  }
+  catch (error){
+        return Promise.resolve();  // error;
+  };
+```
