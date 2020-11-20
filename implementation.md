@@ -20,10 +20,10 @@ Note: this implementation is early and is subject to change.
 | 0x7 | PIN_ATTEMPTS | None | `{PIN_ATTEMPTS}` | - | - |
 | 0x10 | INITIALIZE_SEED | None | `{MASTER,SALT}` | + | + |
 | 0x11 | RESTORE_FROM_SEED | `{MASTER,SALT}` | `{HASH}` | + | + |
-| 0x12 | GENERATE_KEY | None | `{PUBKEY,KEYHANDLE}` | + | - |
-| 0x13 | SIGN | `{HASH,KEYHANDLE}` | `{SIGNATURE,INHASH}` | + | - |
-| 0x14 | DECRYPT | `{DATA,KEYHANDLE,HMAC,ECCEKEY}` | `{DATA}` | + | - |
-| 0x15 | GENERATE_KEY_FROM_DATA | `{HASH}` | `{PUBKEY,KEYHANDLE}` | + | - |
+| 0x12 | GENERATE_KEY | None | `{PUBKEY,KEYHANDLE}` | + | + |
+| 0x13 | SIGN | `{HASH,KEYHANDLE}` | `{SIGNATURE,INHASH}` | + | + |
+| 0x14 | DECRYPT | `{DATA,KEYHANDLE,HMAC,ECCEKEY}` | `{DATA}` | + | + |
+| 0x15 | GENERATE_KEY_FROM_DATA | `{HASH}` | `{PUBKEY,KEYHANDLE}` | + | + |
 
 where for the given command:
 - ID is a hexadecimal integer;
@@ -93,8 +93,8 @@ Sets Nitrokey Webcrypt's secret values as received from the caller. For verifica
 ## Generate non-resident key
 | ID | Mnemonic | Parameters | Returns | Au | Bt |
 | --- | ------ | ---------- | ---------- | --- | --- |
-| 0x12 | GENERATE_KEY | None | `{PUBKEY,KEYHANDLE}` | + | - |
-| 0x15 | GENERATE_KEY_FROM_DATA | `{HASH}` | `{PUBKEY,KEYHANDLE}` | + | - |
+| 0x12 | GENERATE_KEY | None | `{PUBKEY,KEYHANDLE}` | + | + |
+| 0x15 | GENERATE_KEY_FROM_DATA | `{HASH}` | `{PUBKEY,KEYHANDLE}` | + | + |
 
 
 ### From hash (GENERATE_KEY_FROM_DATA)
@@ -195,7 +195,7 @@ To be done (Milestone 3). Command not implemented yet.
 
 | ID | Mnemonic | Parameters | Returns | Au | Bt |
 | --- | ------ | ---------- | ---------- | --- | --- |
-| 0x13 | SIGN | `{HASH,KEYHANDLE}` | `{SIGNATURE,INHASH}` | + | - |
+| 0x13 | SIGN | `{HASH,KEYHANDLE}` | `{SIGNATURE,INHASH}` | + | + |
 
 Using key encoded in `KEYHANDLE` parameter command makes signature over the input hash `HASH` using ECDSA. Returns `SIGNATURE` as a result, as well as the sent hash named `INHASH`. 
 The curve used by default is `secp256r1` (NIST P-256 Random). 
@@ -237,7 +237,7 @@ To implement:
 ## Decrypt
 | ID | Mnemonic | Parameters | Returns | Au | Bt |
 | --- | ------ | ---------- | ---------- | --- | --- |
-| 0x14 | DECRYPT | `{DATA,KEYHANDLE,HMAC,ECCEKEY}` | `{DATA}` | + | - |
+| 0x14 | DECRYPT | `{DATA,KEYHANDLE,HMAC,ECCEKEY}` | `{DATA}` | + | + |
 
 Decrypts data given in the `DATA` field, using `KEYHANDLE` key handle for regenerating the private key, and `ECCEKEY` ephemeral ECC public key for deriving the shared secret. Before that command verifies the data using calculating HMAC over all the fields and comparing with `HMAC`.
 Requires PKCS#7 ([RFC 5652]) padded data to the length of multiple of 32.
