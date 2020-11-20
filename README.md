@@ -2,7 +2,7 @@
 
 ## Summary
 
-Nitrokey is an open source hardware USB key for data encryption and two-factor authentication with FIDO. While FIDO is supported by web browsers, using Nitrokey as a secure key store for email and (arbitrary) data encryption requires a native software. Therefore email encryption in webmail isn’t possible with Nitrokey until now. At the same time strong end-to-end encryption in web applications all share the same challenge: To store users’ private keys securely and conveniently. Therefore secure end-to-end encryption usually requires native software too (e.g. instant messenger app) or – less secure – store the user keys password-encrypted on servers. Nitrokey aims to solve these issues by developing a way to use Nitrokey with web applications. To avoid the necessity of device driver, browser add-on or separate software this project is going to utilize the FIDO (CTAP) protocol. As a result the solution will work with any modern browser (which all support WebAuthn), on any operating system even on Android. This will give any web application the option to store users’ private keys on user’s own Nitrokey devices.
+Nitrokey is an open source hardware USB key for data encryption and two-factor authentication with FIDO. While FIDO is supported by web browsers, using Nitrokey as a secure key store for email and (arbitrary) data encryption requires native software. Therefore email encryption in webmail has not been possible with the Nitrokey until now. At the same time strong end-to-end encryption in web applications all share the same challenge: To store users’ private keys securely and conveniently. Therefore secure end-to-end encryption usually requires native software as well (e.g. instant messenger app) or – less secure – store the user keys password-encrypted on servers. Nitrokey aims to solve these issues by developing a way to use Nitrokey with web applications. To avoid the necessity of device drivers, browser add-on or separate software this project is going to utilize the FIDO (CTAP) protocol. As a result the solution will work with any modern browser (which all support WebAuthn), on any operating system even on Android. This will give any web application the option to store a users’ private keys locally on a Nitrokey they control.
 
 ## Terminology
 
@@ -50,9 +50,9 @@ When calling an operation, the web application chooses (by parameter) if a same-
 
 ### PIN
 
-The PIN is required to authenticate the user during authorizing key operations. I suggest to make it configurable if a) the PIN is required for every operation or b) PIN is required only once per device session. In any case also a touch button press is required to authorize every sign and decrypt operation.
+The PIN is required to authenticate the user during authorizing key operations. I suggest that it be made configurable if a) the PIN is required for every operation or b) PIN is required only once per device session. In any case, a touch confirmation (button press) is required to authorize every sign and decrypt operation.
 
-It's desired to utilize WebAuth's PIN mechanism because it promises better interoperability and higher security (PIN is not exposed to JavaScript). The caveeat is that this will work with MS Edge only for now. We expect other web browsers will support PIN handling in the future. For now we may need to have it backward compatible and handle the PIN entry in JavaScript. This will be a configuration option so that Edge-only users could disable it and therefore protect their device PIN from DoS.
+We use WebAuthn's PIN mechanism because it promises better interoperability and higher security (PIN is not exposed to JavaScript). The caveat is that this will work with MS Edge only for now. We expect other web browsers will support PIN handling in the future. For now we may need to have it backward compatible and handle the PIN entry in JavaScript. This will be a configuration option so that Edge-only users could disable it and therefore protect their device PIN from DoS.
 
 ### Backup and Seed
 
@@ -81,12 +81,12 @@ Using derived keys (as opposed to resident keys) by default provides the followi
   * A backup file needs to be stored separately and (usually) protected with a passphrase.
   * A new backup file needs to be created and stored again and again after generating a new key. 
   * Practice proofs that backups are often not executed properly. This might result in user frustration when they can't access their encrypted data anymore.
-* Having a single or few resident keys might enable malicious websites to track users' devices which could violate their privacy. Therefore it's benefitial to assume derived keys as the default.
+* Having a single or few resident keys might enable malicious websites to track users' devices which could violate their privacy. Therefore it's beneficial to assume derived keys as the default.
 * With resident keys, the amount of keys  (key storage) would be limited. As opposed to this an unlimited amount of derived keys could be used.
 
 ## Deliverables
 
-* A firmware containig the WebCrypt feature.
+* Firmware containing the WebCrypt feature.
 * A JavaScript library to be used by arbitrary web applications to use Nitrokey WebCrypt. 
 * Optional: Patch to openpgp.js adding our WebCrypt library and make use of the device key store.
 * Documentation
@@ -99,68 +99,66 @@ Using derived keys (as opposed to resident keys) by default provides the followi
 
 ## Milestones
 
-### A. Firmware	
-#### I. Establishing PoC	
-
+### A. Firmware
+#### I. Establishing PoC
 * Communication layer over FIDO2. Estimation assumes no code reuse.
-* Initial design and structure for commands -	Setting up code structure and design for commands and implementations
-* Initialize and restore from seed -	Master seed handling. Additional time for security analysis. Basic tests included.
-* Generate non-resident key -	Key generation. Additional time for security analysis. Basic tests included.
-* Sign(to_be_signed_data_hash, public_key, HMAC, origin) -	Expecting simple implementation. Basic tests included.
-* Decrypt(to_be_decrypted_data, public_key, HMAC, origin) -	Expecting simple implementation. Basic tests included.
-* Status (Unlocked, version, available resident key slots) -	Expecting simple implementation. Basic tests included.
-* Additional firmware tests -	Tests for everyday usage, edge cases, invalid use cases.
-	
-#### II. Encrypted storage	
-* Encrypted resident keys and master key (for derived keys) -	for all user data entities
-	
-#### III. Resident keys feature	
-* Write resident key - for externally existing keys only -	Expecting simple implementation. Basic tests included.
-* Read public key of residential and derived keys -	Expecting simple implementation. Basic tests included.
-	
-#### IV. FIDO U2F support	
+* Initial design and structure for commands - Setting up code structure and design for commands and implementations
+* Initialize and restore from seed - Master seed handling. Additional time for security analysis. Basic tests included.
+* Generate non-resident key - Key generation. Additional time for security analysis. Basic tests included.
+* Sign(to_be_signed_data_hash, public_key, HMAC, origin) - Expecting simple implementation. Basic tests included.
+* Decrypt(to_be_decrypted_data, public_key, HMAC, origin) - Expecting simple implementation. Basic tests included.
+* Status (Unlocked, version, available resident key slots) - Expecting simple implementation. Basic tests included.
+* Additional firmware tests - Tests for everyday usage, edge cases, invalid use cases.
+
+#### II. Encrypted storage
+* Encrypted resident keys and master key (for derived keys) - for all user data entities
+
+#### III. Resident keys feature
+* Write resident key - for external keys only - Expecting simple implementation. Basic tests included.
+* Read public key of resident keys - Expecting simple implementation. Basic tests included.
+
+#### IV. FIDO U2F support
 * CTAP1 transport layer (for backward compatibility)
-* Unlock - For U2F compatibility -	Expecting simple implementation. Basic tests included.
-* Reset - For U2F compatibility -	Expecting simple implementation. Basic tests included.
-* Configure - U2F and other options -	Expecting simple implementation. Basic tests included.
+* Unlock - For U2F compatibility - Expecting simple implementation. Basic tests included.
+* Reset - For U2F compatibility - Expecting simple implementation. Basic tests included.
+* Configure - U2F and other options - Expecting simple implementation. Basic tests included.
   * PIN's use - each action, or once per session
 
 #### V. RSA support
-* RSA support - firmware side -	tests included. For resident keys only.
-* RSA support - Nitrokey JS library -	Add support to JS library
-* RSA support - OpenPGP.js -	Add support to 3rd party JS library
-	
+* RSA support - firmware side - tests included. For resident keys only.
+* RSA support - Nitrokey JS library - Add support to JS library
+* RSA support - OpenPGP.js - Add support to 3rd party JS library
+
 #### VI. NFC support
-* NFC tests and bug fixes -	Tests for NFC interactions (PC/Mobile)
-	
-#### B. JavaScript library for web applications	
-* API design -	API design for the JS Nitrokey WebCrypt library
-* API implementation -	Library implementation
-* Tests	Javascript automatic and manual tests
-* Tests automation -	Additional Javascript automatic tests
-* JS Demo Application -	Demo application, similar to the OnlyKey’s demo + additional features if time permits
-	
+* NFC tests and bug fixes - Tests for NFC interactions (PC/Mobile)
+
+#### B. JavaScript library for web applications
+* API design - API design for the JS Nitrokey WebCrypt library
+* API implementation - Library implementation
+* Tests: both automatic and manual Javascript tests
+* JS Demo Application - Demo application, similar to the OnlyKey’s demo + additional features if time permits
+
 #### C. Documentation
-* Firmware: Commands and Features -	Examples of use (developers-centric, to pick-up framework)
-* JavaScript library -	Focus on use cases
+* Firmware: Commands and Features - Examples of use (developers-centric, to pick-up framework)
+* JavaScript library - Focus on use cases
 
 ## Extensions
-	
+
 #### D. OpenPGP Card Interface
-* Basic integration -	CCID (GnuPG + etc.) and our custom access, assuming Solo’s OpenPGP card integration.
-* ECDSA support -	Signing function already provided, but the format parsing is to be implemented. Usable for ECC encryption.
+* Basic integration - CCID (GnuPG + etc.) and our custom access, assuming Solo’s OpenPGP card integration.
+* ECDSA support - Signing function already provided, but the format parsing is to be implemented. Usable for ECC encryption.
 * ECC decryption
 * Feature completion and improvements of given implementation
 * Security review and improvements
-	
+
 #### E. OpenPGP.js patch
 Patch for OpenPGP.js to use Nitrokey WebCrypt extension (to use our device as key storage, instead of host storage)
 
-* First implementation – decryption operation -	JavaScript implementation of the library
-* Tests	Javascript automatic and manual tests
+* First implementation – decryption operation - JavaScript implementation of the library
+* Tests Javascript automatic and manual tests
 * Signing
 * Key handling:
   * import
   * generation
 * Reserved time for additional corrections, developers input
-* Documentation of OpenPGP patch changes -	Documentation for OpenPGP.js developers/users, to be included by them
+* Documentation of OpenPGP patch changes - Documentation for OpenPGP.js developers/users, to be included by them
