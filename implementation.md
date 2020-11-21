@@ -1,10 +1,10 @@
-# Nitrokey Webcrypt Documentation
+# Nitrokey Webcrypt Implementation Documentation
 
 This is a documentation of the implemented Nitrokey Webcrypt Milestone 1 interface in the Nitrokey FIDO2. Below a high level description of the commands, as well as low-level protocol details can be found. 
 
 Note: this implementation is early and is subject to change.
 
-## Overview table
+## Commands Overview Table
 
 
 
@@ -191,7 +191,7 @@ To be done (Milestone 3). Command not implemented yet.
 
 
 
-## Sign
+## Sign (SIGN)
 
 | ID | Mnemonic | Parameters | Returns | Au | Bt |
 | --- | ------ | ---------- | ---------- | --- | --- |
@@ -234,7 +234,7 @@ To implement:
 
 
 
-## Decrypt
+## Decrypt (DECRYPT)
 | ID | Mnemonic | Parameters | Returns | Au | Bt |
 | --- | ------ | ---------- | ---------- | --- | --- |
 | 0x14 | DECRYPT | `{DATA,KEYHANDLE,HMAC,ECCEKEY}` | `{DATA}` | + | + |
@@ -282,7 +282,7 @@ plaintext = AES256(shared_secret, DATA)
 - `*` - work in progress: - maximum data length will be increased.
 
 
-## Status 
+## Status (STATUS)
 | ID | Mnemonic | Parameters | Returns | Au | Bt |
 | --- | ------ | ---------- | ---------- | --- | --- |
 | 0x0 | STATUS | None | `{UNLOCKED,VERSION,SLOTS,PIN_ATTEMPTS}` | - | - |
