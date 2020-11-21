@@ -17,7 +17,7 @@ Note: this implementation is early and is subject to change.
 | 0x4 | LOGIN | TBD | TBD | - | + |
 | 0x5 | LOGOUT | None | None | - | - |
 | 0x6 | FACTORY_RESET | None | None | - | + |
-| 0x10 | INITIALIZE_SEED | None | `{MASTER,SALT}` | + | + |
+| 0x10 | INITIALIZE_SEED | `{ENTROPY}` | `{MASTER,SALT}` | + | + |
 | 0x11 | RESTORE_FROM_SEED | `{MASTER,SALT}` | `{HASH}` | + | + |
 | 0x12 | GENERATE_KEY | None | `{PUBKEY,KEYHANDLE}` | + | + |
 | 0x13 | SIGN | `{HASH,KEYHANDLE}` | `{SIGNATURE,INHASH}` | + | + |
@@ -37,11 +37,11 @@ where for the given command:
 ## Initialize (INITIALIZE_SEED)
 | ID | Mnemonic | Parameters | Returns | Au | Bt |
 | --- | ------ | ---------- | ---------- | --- | --- |
-| 0x10 | INITIALIZE_SEED | None | `{MASTER,SALT}` | + | + |
+| 0x10 | INITIALIZE_SEED | `{ENTROPY}` | `{MASTER,SALT}` | + | + |
 
-Sets random values (sourced from the HWRNG) to the Nitrokey Webcrypt's secrets - master key and PBKDF2 salt - and returns them to the caller for the backup purposes. 
+Sets random values (sourced from the HWRNG) to the Nitrokey Webcrypt's secrets - *Master Key* and *Salt* - and returns them to the caller for the backup purposes. The device produced random values are XOR'ed with the incoming ENTROPY field. 
 
-On the client application side these binary secrets should be translated to human readable word-based representation similarly to [BIP#39], e.g.:
+On the client application side these binary secrets should be translated to human readable word-based representation, *Word Seed*, similarly to [BIP#39], e.g.:
 ```
    witch collapse practice feed shame open despair creek road again ice least
 ```
@@ -50,8 +50,17 @@ In the future the secret will be returned in one field instead of two.
 
 [BIP#39]: https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki
 
+Note: Nitrokey Webcrypt's secrets should be guaranteed to always be initialized. It should not be possible to use them however unless confirmed that user has his backup *Word Seed* saved. 
+
+```
+random_data[40] = HWRNG(40)
+MASTER[32],SALT[8] = random_data[40] ^ ENTROPY[40]
+```
+
+
 ### Input description
-None
+| --- | ------ | ---------- | 
+| `ENTROPY` | 40 | Client-sourced bytes to be mixed with HWRNG result |
 
 ### Output description
 | Field | Size [B] | Description |
@@ -76,11 +85,16 @@ None
 
 Sets Nitrokey Webcrypt's secret values as received from the caller. For verification calculates SHA256 hash of the input and returns as `HASH`. 
 
+
+```
+HASH = SHA256(MASTER|SALT)
+```
+
 ### Input description
 | Field | Size [B] | Description |
 | --- | ------ | ---------- | 
-| `MASTER` | 32 | Nitrokey Webcrypt's master secret |
-| `SALT` | 8 | PBKDF2 salt |
+| `MASTER` | 32 | Nitrokey Webcrypt's Master Secret |
+| `SALT` | 8 | Salt |
 
 ### Output description
 | Field | Size [B] | Description |
@@ -107,7 +121,9 @@ Sets Nitrokey Webcrypt's secret values as received from the caller. For verifica
 
 ### From hash (GENERATE_KEY_FROM_DATA)
 
-For the actual key generation the FIDO U2F key generation and wrapping mechanism was reused. The passphrase is processed through a hash function (e.g. Argon2) with known parameters client side, and the hash result is sent to the device. The received hash is mixed through PBKDF2 with device's salt, then HMAC'ed with the Nitrokey Webcrypt's master key `WC_MASTER_KEY` along with the authentication tag. Finally it is encrypted through another secret key - `WC_MASTER_ENC_KEY`. 
+For the actual key generation the FIDO U2F / FIDO2 key generation and wrapping mechanism was reused, but with different constants set. The passphrase is processed through a hash function (e.g. Argon2) with known parameters client side, and the hash result is sent to the device. The received hash is mixed through PBKDF2 with device's salt, then HMAC'ed with the Nitrokey Webcrypt's master key `WC_MASTER_KEY` along with the authentication tag. Finally it is encrypted through another secret key - `WC_MASTER_ENC_KEY`. 
+
+The hash function selection, use and parameters will be standardized in the future.
 
 ```text
 # Browser
@@ -126,8 +142,12 @@ key_priv_plain[32] = HMAC(WC_MASTER_KEY, tag|key_data_raw)
 key_priv[32] = AES256(WC_MASTER_ENC_KEY, key_priv_plain)
 key_pub[64] = ECC_compute_public_key(key_priv)
 key_handle[48] = tag|key_data_raw
+PUBKEY = key_pub
+KEYHANDLE = key_handle
 ```
 
+To discuss:
+- if `WC_MASTER_ENC_KEY` use is required to derive a strong key. From the UX perspective it might require user to store another 20-24 words of the backup *Word Seed*, which is not desired.
 
 #### Input description
 | Field | Size [B] | Description |
@@ -151,9 +171,9 @@ Both commands return the same errors listed below.
 
 
 ### Random (GENERATE_KEY)
-Random key generation follows the same path as from the hash, except that instead of the `key_data_raw` a randomized 32 bytes value is used, sourced from the device's HWRNG. Resulting KEYHANDLE can be stored off-device for the later use, e.g. locally in the browser (localStorage / cookie), or on a remote server. 
+Random key generation follows the same path as from the hash, except that instead of the `key_data_raw` a randomized 32 bytes value is used, sourced from the device's HWRNG. Resulting `KEYHANDLE` can be stored off-device for the later use, e.g. locally in the browser (localStorage / cookie), or on a remote server. 
 
-See *From hash (GENERATE_KEY_FROM_DATA)* chapter for the full pseudocode.
+See *From hash (GENERATE_KEY_FROM_DATA)* chapter for the full pseudocode, specifically key wrapping.
 
 ```text
 # Device
@@ -203,16 +223,20 @@ To be done (Milestone 3). Command not implemented yet.
 
 | ID | Mnemonic | Parameters | Returns | Au | Bt |
 | --- | ------ | ---------- | ---------- | --- | --- |
-| 0x13 | SIGN | `{HASH,KEYHANDLE}` | `{SIGNATURE,INHASH}` | + | + |
+| 0x13 | SIGN | `{HASH,KEYHANDLE}` | `{SIGNATURE,HASH}` | + | + |
 
-Using key encoded in `KEYHANDLE` parameter command makes signature over the input hash `HASH` using ECDSA. Returns `SIGNATURE` as a result, as well as the sent hash named `INHASH`. 
+Using key encoded in `KEYHANDLE` parameter command makes signature over the input hash `HASH` using ECDSA. Returns `SIGNATURE` as a result, as well as the incoming hash `HASH`. 
+`KEYHANDLE` authenticity (whether it was generated with given *Master Key* and to use for given *Origin*) is verified before use.
+Incoming `HASH` data is repeated on the output for signature confirmation.
 The curve used by default is `secp256r1` (NIST P-256 Random). 
 
 Implementation is reused from the FIDO U2F key-wrapped authentication. In pseudocode:
 ```text
 tag[16], key_data_raw[32] = keyhandle[48]
+if not authentic(tag): abort
 key_pub, key_priv = wc_new_keypair(key_data_raw, appid)
 signature = ECC_SIGN(key_priv, hash)
+HASH=HASH
 ```
 
 To implement:
@@ -231,7 +255,7 @@ To implement:
 | Field | Size [B] | Description |
 | --- | ------ | ---------- | 
 | `SIGNATURE` | 64 | ECC signature |
-| `INHASH` | 32 | Key handle |
+| `HASH` | 32 | Incoming raw data to sign |
 
 ### Errors
 | ID | Mnemonic | Description |
@@ -247,7 +271,9 @@ To implement:
 | --- | ------ | ---------- | ---------- | --- | --- |
 | 0x14 | DECRYPT | `{DATA,KEYHANDLE,HMAC,ECCEKEY}` | `{DATA}` | + | + |
 
-Decrypts data given in the `DATA` field, using `KEYHANDLE` key handle for regenerating the private key, and `ECCEKEY` ephemeral ECC public key for deriving the shared secret. Before that command verifies the data using calculating HMAC over all the fields and comparing with `HMAC`.
+Decrypts data given in the `DATA` field, using `KEYHANDLE` *Key Handle* for regenerating the private key, and `ECCEKEY` ephemeral ECC public key for deriving the shared secret using ECDH. Before that this command verifies the data by calculating HMAC over all the fields and comparing with incoming `HMAC` field.
+`KEYHANDLE` authenticity (whether it was generated with given *Master Key* and to use for given *Origin*) is verified before use.
+
 Requires PKCS#7 ([RFC 5652]) padded data to the length of multiple of 32.
 Work in progress.
 
@@ -255,6 +281,7 @@ Pseudocode:
 ```text
 # in: DATA,KEYHANDLE,HMAC_in,ECCEKEY
 tag[16], key_data_raw[32] = KEYHANDLE[48]
+if not authentic(tag): abort
 key_pub, key_priv = wc_new_keypair(key_data_raw, appid)
 shared_secret = ecc256_shared_secret(ECCEKEY)
 data_len = len(DATA)
@@ -293,11 +320,14 @@ plaintext = AES256(shared_secret, DATA)
 ## Status (STATUS)
 | ID | Mnemonic | Parameters | Returns | Au | Bt |
 | --- | ------ | ---------- | ---------- | --- | --- |
-| 0x0 | STATUS | None | `{UNLOCKED,VERSION,SLOTS,PIN_ATTEMPTS}` | - | - |
+| 0x0 | STATUS | None | `{VERSION,SLOTS,PIN_ATTEMPTS}` | - | - |
 
 
 Command requires authentication: no.
 Work in progress.
+
+To discuss:
+- should `SLOTS` number not be hidden to avoid fingerprinting.
 
 ### Input description
 None
@@ -305,9 +335,8 @@ None
 ### Output description
 | Field | Size [B] | Description |
 | --- | ------ | ---------- | 
-| `UNLOCKED` | 1 | FIDO U2F transport only - whether user has logged in with `LOGIN` command (Milestone 4) |
 | `VERSION` | 1 | implemented Nitrokey Webcrypt's version |
-| `SLOTS` | 1 | number of available Resident Keys slots |
+| `SLOTS` | 1 | number of left available Resident Keys slots |
 | `PIN_ATTEMPTS` | 1 | FIDO2 PIN attempt counter's current value |
 
 ### Errors
