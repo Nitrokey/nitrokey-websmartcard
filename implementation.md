@@ -17,7 +17,6 @@ Note: this implementation is early and is subject to change.
 | 0x4 | LOGIN | TBD | TBD | - | + |
 | 0x5 | LOGOUT | None | None | - | - |
 | 0x6 | FACTORY_RESET | None | None | - | + |
-| 0x7 | PIN_ATTEMPTS | None | `{PIN_ATTEMPTS}` | - | - |
 | 0x10 | INITIALIZE_SEED | None | `{MASTER,SALT}` | + | + |
 | 0x11 | RESTORE_FROM_SEED | `{MASTER,SALT}` | `{HASH}` | + | + |
 | 0x12 | GENERATE_KEY | None | `{PUBKEY,KEYHANDLE}` | + | + |
