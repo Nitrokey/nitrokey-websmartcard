@@ -39,7 +39,16 @@ where for the given command:
 | --- | ------ | ---------- | ---------- | --- | --- |
 | 0x10 | INITIALIZE_SEED | None | `{MASTER,SALT}` | + | + |
 
-Sets random values (sourced from the HWRNG) to the Nitrokey Webcrypt's secrets - master key and PBKDF2 salt - and returns them to the caller. 
+Sets random values (sourced from the HWRNG) to the Nitrokey Webcrypt's secrets - master key and PBKDF2 salt - and returns them to the caller for the backup purposes. 
+
+On the client application side these binary secrets should be translated to human readable word-based representation similarly to [BIP#39], e.g.:
+```
+   witch collapse practice feed shame open despair creek road again ice least
+```
+
+In the future the secret will be returned in one field instead of two.
+
+[BIP#39]: https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki
 
 ### Input description
 None
@@ -47,8 +56,8 @@ None
 ### Output description
 | Field | Size [B] | Description |
 | --- | ------ | ---------- | 
-| `MASTER` | 32 | Nitrokey Webcrypt's master secret |
-| `SALT` | 8 | PBKDF2 salt |
+| `MASTER` | 32 | Nitrokey Webcrypt's *Master Secret* |
+| `SALT` | 8 | Salt |
 
 
 ### Errors
