@@ -454,6 +454,8 @@ All parameters to the commands sent in the `DATA` field of the data packet are [
 
 ## Full packet example
 
+Following is an example Nitrokey Webcrypt packet with `WRITE` operation for the `STATUS` command.
+This packet should be provided as an argument for the Webauthn MakeAssertion's `key handle` parameter.
 
 ![Packet diagram](./images/packet.svg)
 
