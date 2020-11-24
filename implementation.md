@@ -394,21 +394,47 @@ For low-level communication two commands are required:
 - `READ` - to read from the Nitrokey Webcrypt's result buffer on the device; 
 
 
-### Packet structure
+## Packet structure
 | Offset | Length | Mnemonic | Comments |
 | ------ | ------ | -------  |  ------- |
-| 0 | 1 | WEBCRYPT_CONST | Always equal to `0x22`. |
-| 1 | 14 | NULL_HEADER | Nitrokey Webcrypt's magic value to recognize extension over FIDO2 |
-| 15 | 1 | COMM_ID | WRITE (`0x01`) or READ (`0x02`) |
-| 16 | 1 | PACKET_NUM | This packet number, 0-255 |
-| 17 | 1 | PACKET_CNT | Total packet count, 0-255 |
-| 18 | 1 | CHUNK_SIZE | Size of the data chunk, 0-255|
-| 19 | 1 | CHUNK_LEN | Length of the given data chunk, 0-CHUNK_SIZE |
-| 20 | CHUNK_LEN | DATA | Data to send  |
+| 0  | 1 | WEBCRYPT_CONST | Always equal to `0x22`. |
+| 1  | 4 | NULL_HEADER | Nitrokey Webcrypt's magic value to recognize extension over FIDO2 |
+| 5  | 1 | COMM_ID | WRITE (`0x01`) or READ (`0x02`) |
+| 6  | 1 | PACKET_NUM | This packet number, 0-255 |
+| 7  | 1 | PACKET_CNT | Total packet count, 0-255 |
+| 8  | 1 | CHUNK_SIZE | Size of the data chunk, 0-255|
+| 9  | 1 | CHUNK_LEN | Length of the given data chunk, 0-CHUNK_SIZE |
+| 10 | CHUNK_LEN | DATA | Data to send  |
 
-Having dynamic `CHUNK_SIZE` allows to change the communication parameters on the fly, and depending on the platform conditions.
+Notes:
+- Having dynamic `CHUNK_SIZE` allows to change the communication parameters on the fly, and depending on the platform conditions.
+- Introducing redundant information in the form of the packet number and count allows to identify potential transmission issues, like doubled packets (Windows 10 issue).
 Magic value is:
-- `00 00 00 8C 27 90 f6 00 00`
+- `8C 27 90 f6`
+
+
+## Data packet structure
+
+| Offset | Length | Mnemonic | Comments |
+| ------ | ------ | -------  |  ------- |
+| 0  | 1 | COMMAND_ID | Command ID to execute |
+| 1  | variable | DATA | CBOR encoded arguments to the command |
+
+
+## Encoding
+
+All parameters to the commands sent in the `DATA` field of the data packet are [CBOR](Concise Binary Object Representation, RFC7049) encoded key-value maps. This method was chosen due to following:
+- FIDO2 requires CBOR encoded parameters as well, hence parser and encoder are provided already for FIDO2 supporting devices.
+- CBOR handling libraries are available for all major languages, including JavaScript, where the client applications are meant to be developed.
+
+[CBOR]: https://tools.ietf.org/html/rfc7049
+
+## Full packet example
+
+
+![Packet diagram](./images/packet.svg)
+
+
 
 
 
