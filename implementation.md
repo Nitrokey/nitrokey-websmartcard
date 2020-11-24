@@ -397,7 +397,8 @@ For low-level communication two commands are required:
 - `WRITE` - to write to the Nitrokey Webcrypt's incoming buffer on the device;
 - `READ` - to read from the Nitrokey Webcrypt's outgoing buffer on the device; 
 
-Last packet of the `WRITE` protocol operation executes the command. If there are any results, these will be available in the outgoing buffer, from which client can download the content using `READ` commands. In future this might be minimalized by removing redundant first call to `READ` (similarly to [CTAP]).
+Last packet of the `WRITE` protocol operation executes the command. If there are any results, these will be available in the outgoing buffer, from which client can download the content using `READ` commands. 
+In future this might be minimalized by removing the redundant first call to `READ` by moving first part of the results to the `WRITE` operation response (similarly to [CTAP]).
 
 
 ## Packet structure
@@ -405,7 +406,7 @@ Last packet of the `WRITE` protocol operation executes the command. If there are
 | ------ | ------ | -------  |  ------- |
 | 0  | 1 | WEBCRYPT_CONST | Always equal to `0x22`. |
 | 1  | 4 | NULL_HEADER | Nitrokey Webcrypt's magic value to recognize extension over FIDO2 |
-| 5  | 1 | COMM_ID | WRITE (`0x01`) or READ (`0x02`) |
+| 5  | 1 | COMM_ID | Operation: WRITE (`0x01`) or READ (`0x02`) |
 | 6  | 1 | PACKET_NUM | This packet number, 0-255 |
 | 7  | 1 | PACKET_CNT | Total packet count, 0-255 |
 | 8  | 1 | CHUNK_SIZE | Size of the data chunk, 0-255|
@@ -416,7 +417,7 @@ Notes:
 - Having dynamic `CHUNK_SIZE` allows to change the communication parameters on the fly, and depending on the platform conditions.
 - Introducing redundant information in the form of the packet number and count allows to identify potential transmission issues, like doubled packets (Windows 10 Webauthn handling issue).
 - Magic value is: `8C 27 90 F6`.
-- In future packet format might be modified to be more compact by removing redundant information (similarly to [CTAP]).
+- In future packet format might be modified to be more compact by removing redundant information (e.g. removing packet sequence information and current chunk lenght, but leaving current chunk size; similarly to [CTAP]).
 
 
 
@@ -425,7 +426,22 @@ Notes:
 | Offset | Length | Mnemonic | Comments |
 | ------ | ------ | -------  |  ------- |
 | 0  | 1 | COMMAND_ID | Command ID to execute |
-| 1  | variable | DATA | CBOR encoded arguments to the command |
+| 1  | CHUNK_LEN-1 | DATA | CBOR encoded arguments to the command |
+
+
+## Incoming packet format for WRITE
+| Offset | Length | Mnemonic | Comments |
+| ------ | ------ | -------  |  ------- |
+| 0  | 1 | RESULT | Result code |
+
+Execution's result code are described under each command description.
+
+## Incoming packet format for READ
+| Offset | Length | Mnemonic | Comments |
+| ------ | ------ | -------  |  ------- |
+| 0  | 2 | DATA_LEN | Data length N |
+| 2  | 1 | CMD_ID | Command ID that produced result |
+| 3  | DATA_LEN | DATA | Data received |
 
 
 ## Encoding
