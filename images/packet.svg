@@ -51,12 +51,12 @@
         <g transform="translate(53,43)">
           <g transform="translate(0)">
             <text y="6">
-              <tspan>0x22</tspan>
+              <tspan>=0x22</tspan>
             </text>
           </g>
           <g transform="translate(263)">
             <text y="6">
-              <tspan>8C 27 90 F6</tspan>
+              <tspan>=0x8C2790F6</tspan>
             </text>
           </g>
           <g>
@@ -144,15 +144,49 @@
           </g>
         </g>
         <g transform="translate(53,43)">
-          <g transform="translate(421)">
+          <g transform="translate(0)">
             <text y="6">
-              <tspan>data packet</tspan>
+              <tspan>e.g. 0</tspan>
             </text>
           </g>
-          <g transform="translate(526)">
+          <g transform="translate(105)">
             <text y="6">
-              <tspan>data packet</tspan>
+              <tspan>e.g. 1</tspan>
             </text>
+          </g>
+          <g transform="translate(210)">
+            <text y="6">
+              <tspan>e.g. 200</tspan>
+            </text>
+          </g>
+          <g transform="translate(316)">
+            <text y="6">
+              <tspan>e.g. 100</tspan>
+            </text>
+          </g>
+          <g>
+            <g transform="translate(421)">
+              <text y="6">
+                <tspan>data packet</tspan>
+              </text>
+            </g>
+            <g transform="translate(421,14)">
+              <text y="6">
+                <tspan>e.g. STATUS</tspan>
+              </text>
+            </g>
+          </g>
+          <g>
+            <g transform="translate(526)">
+              <text y="6">
+                <tspan>data packet</tspan>
+              </text>
+            </g>
+            <g transform="translate(526,14)">
+              <text y="6">
+                <tspan>e.g. 'CBOR({})'</tspan>
+              </text>
+            </g>
           </g>
         </g>
       </g>

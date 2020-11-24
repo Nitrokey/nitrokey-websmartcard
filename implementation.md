@@ -408,9 +408,10 @@ For low-level communication two commands are required:
 
 Notes:
 - Having dynamic `CHUNK_SIZE` allows to change the communication parameters on the fly, and depending on the platform conditions.
-- Introducing redundant information in the form of the packet number and count allows to identify potential transmission issues, like doubled packets (Windows 10 issue).
+- Introducing redundant information in the form of the packet number and count allows to identify potential transmission issues, like doubled packets (Windows 10 Webauthn handling issue).
 Magic value is:
-- `8C 27 90 f6`
+- `8C 27 90 F6`
+
 
 
 ## Data packet structure
