@@ -1,0 +1,11 @@
+[
+    { "name": "WC_CONST",   "bits": 1, "attr": "0x22" },
+    { "name": "MAGIC_VALUE",   "bits": 4, "attr":"8C 27 90 F6" },
+    { "name": "COMM_ID",   "bits": 1, "attr": ["READ","WRITE"] },
+    { "name": "PACKET_NUM",   "bits": 1 },
+    { "name": "PACKET_CNT",   "bits": 1 },
+    { "name": "CHUNK_SIZE",   "bits": 1 },
+    { "name": "CHUNK_LEN",   "bits": 1 },
+    { "name": "CMD_ID",   "bits": 1, "type": 4, "attr": "data packet" },
+    { "name": "DATA",   "bits": 1, "type": 4, "attr": "data packet" }
+]

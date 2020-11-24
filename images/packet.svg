@@ -1,0 +1,162 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="160" viewBox="0 0 640 160">
+  <g transform="translate(0.5,0.5)" text-anchor="middle" font-size="14" font-family="sans-serif" font-weight="normal">
+    <g transform="translate(4,14)">
+      <g stroke="black" stroke-width="1" stroke-linecap="round">
+        <line x2="631"/>
+        <line x1="631" x2="631" y2="36"/>
+        <line x2="631" y1="36" y2="36"/>
+        <line y2="36"/>
+        <line x1="105" x2="105" y2="36"/>
+        <line x1="210" x2="210" y2="4"/>
+        <line x1="210" x2="210" y1="36" y2="32"/>
+        <line x1="316" x2="316" y2="4"/>
+        <line x1="316" x2="316" y1="36" y2="32"/>
+        <line x1="421" x2="421" y2="4"/>
+        <line x1="421" x2="421" y1="36" y2="32"/>
+        <line x1="526" x2="526" y2="36"/>
+      </g>
+      <g>
+        <g/>
+        <g transform="translate(53,-9)">
+          <g transform="translate(0)">
+            <text y="6">0</text>
+          </g>
+          <g transform="translate(105)">
+            <text y="6">1</text>
+          </g>
+          <g transform="translate(421)">
+            <text y="6">4</text>
+          </g>
+          <g transform="translate(526)">
+            <text y="6">5</text>
+          </g>
+        </g>
+        <g transform="translate(53,18)">
+          <g transform="translate(0)">
+            <text y="6">
+              <tspan>WC_CONST</tspan>
+            </text>
+          </g>
+          <g transform="translate(263)">
+            <text y="6">
+              <tspan>MAGIC_VALUE</tspan>
+            </text>
+          </g>
+          <g transform="translate(526)">
+            <text y="6">
+              <tspan>COMM_ID</tspan>
+            </text>
+          </g>
+        </g>
+        <g transform="translate(53,43)">
+          <g transform="translate(0)">
+            <text y="6">
+              <tspan>0x22</tspan>
+            </text>
+          </g>
+          <g transform="translate(263)">
+            <text y="6">
+              <tspan>8C 27 90 F6</tspan>
+            </text>
+          </g>
+          <g>
+            <g transform="translate(526)">
+              <text y="6">
+                <tspan>READ</tspan>
+              </text>
+            </g>
+            <g transform="translate(526,14)">
+              <text y="6">
+                <tspan>WRITE</tspan>
+              </text>
+            </g>
+          </g>
+        </g>
+      </g>
+    </g>
+    <g transform="translate(4,94)">
+      <g stroke="black" stroke-width="1" stroke-linecap="round">
+        <line x2="631"/>
+        <line x1="631" x2="631" y2="36"/>
+        <line x2="631" y1="36" y2="36"/>
+        <line y2="36"/>
+        <line x1="105" x2="105" y2="36"/>
+        <line x1="210" x2="210" y2="36"/>
+        <line x1="316" x2="316" y2="36"/>
+        <line x1="421" x2="421" y2="36"/>
+        <line x1="526" x2="526" y2="36"/>
+      </g>
+      <g>
+        <g>
+          <rect x="421" width="105" height="36" style="fill-opacity:0.1;fill:hsl(170,100%,50%)"/>
+          <rect x="526" width="105" height="36" style="fill-opacity:0.1;fill:hsl(170,100%,50%)"/>
+        </g>
+        <g transform="translate(53,-9)">
+          <g transform="translate(0)">
+            <text y="6">6</text>
+          </g>
+          <g transform="translate(105)">
+            <text y="6">7</text>
+          </g>
+          <g transform="translate(210)">
+            <text y="6">8</text>
+          </g>
+          <g transform="translate(316)">
+            <text y="6">9</text>
+          </g>
+          <g transform="translate(421)">
+            <text y="6">10</text>
+          </g>
+          <g transform="translate(526)">
+            <text y="6">11</text>
+          </g>
+        </g>
+        <g transform="translate(53,18)">
+          <g transform="translate(0)">
+            <text y="6">
+              <tspan>PACKET_NUM</tspan>
+            </text>
+          </g>
+          <g transform="translate(105)">
+            <text y="6">
+              <tspan>PACKET_CNT</tspan>
+            </text>
+          </g>
+          <g transform="translate(210)">
+            <text y="6">
+              <tspan>CHUNK_SIZE</tspan>
+            </text>
+          </g>
+          <g transform="translate(316)">
+            <text y="6">
+              <tspan>CHUNK_LEN</tspan>
+            </text>
+          </g>
+          <g transform="translate(421)">
+            <text y="6">
+              <tspan>CMD_ID</tspan>
+            </text>
+          </g>
+          <g transform="translate(526)">
+            <text y="6">
+              <tspan>DATA</tspan>
+            </text>
+          </g>
+        </g>
+        <g transform="translate(53,43)">
+          <g transform="translate(421)">
+            <text y="6">
+              <tspan>data packet</tspan>
+            </text>
+          </g>
+          <g transform="translate(526)">
+            <text y="6">
+              <tspan>data packet</tspan>
+            </text>
+          </g>
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>
+
