@@ -381,17 +381,23 @@ This chapter is still a work in progress.
 
 [Webauthn]: https://www.w3.org/TR/webauthn/
 [FIDO2]: https://fidoalliance.org/specifications/
+[CTAP]: https://fidoalliance.org/specs/fido2/fido-client-to-authenticator-protocol-v2.1-rd-20191217.html
 
 ## Overview
 
-Each Nitrokey Webcrypt's request is sent over FIDO2 using MakeAssertion operation. It allows to transfer 255 bytes to the device, and receive 73 bytes back. The data fields used are:
+Nitrokey Webcrypt's communication is based on the Request-Response message exchange pattern, where communication is initiated always by the host, and each data update requires sending the request.
+
+Each Nitrokey Webcrypt's request is sent over Webauthn using MakeAssertion operation. It allows to transfer 255 bytes to the device, and receive 73 bytes back. The data fields used are:
 - `key handle` for sending to device;
 - `signature` for receiving from device.
+
 
 ## Commands
 For low-level communication two commands are required:
 - `WRITE` - to write to the Nitrokey Webcrypt's incoming buffer on the device;
-- `READ` - to read from the Nitrokey Webcrypt's result buffer on the device; 
+- `READ` - to read from the Nitrokey Webcrypt's outgoing buffer on the device; 
+
+Last packet of the `WRITE` protocol operation executes the command. If there are any results, these will be available in the outgoing buffer, from which client can download the content using `READ` commands. In future this might be minimalized by removing redundant first call to `READ` (similarly to [CTAP]).
 
 
 ## Packet structure
@@ -409,8 +415,8 @@ For low-level communication two commands are required:
 Notes:
 - Having dynamic `CHUNK_SIZE` allows to change the communication parameters on the fly, and depending on the platform conditions.
 - Introducing redundant information in the form of the packet number and count allows to identify potential transmission issues, like doubled packets (Windows 10 Webauthn handling issue).
-Magic value is:
-- `8C 27 90 F6`
+- Magic value is: `8C 27 90 F6`.
+- In future packet format might be modified to be more compact by removing redundant information (similarly to [CTAP]).
 
 
 
@@ -434,9 +440,6 @@ All parameters to the commands sent in the `DATA` field of the data packet are [
 
 
 ![Packet diagram](./images/packet.svg)
-
-
-
 
 
 # FIDO2 actions relationship
