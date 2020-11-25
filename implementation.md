@@ -369,8 +369,17 @@ Not implemented at the moment:
 - `TEST_REBOOT` - reboot device.
 
 
+## Common errors table
+Following errors are common to all commands requiring authorization.
 
+| ID | Mnemonic | Description |
+| --- | ------ | ---------- |
+| 0xF0 | ERR_REQ_AUTH | Command needs to be authorized by PIN * |
+| 0xF1 | ERR_INVALID_PIN | Provided PIN is invalid |
+| 0xF4 | ERR_USER_NOT_PRESENT | User has not pressed touch button in time |
 
+Notes:
+- * `ERR_REQ_AUTH` should be returned, when: for FIDO U2F the session token was not provided in the data, for FIDO2 the PIN was not requested from the user (`userVerification: "discouraged"`)
 
 
 # Protocol
