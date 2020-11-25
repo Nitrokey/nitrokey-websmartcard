@@ -35,7 +35,6 @@ This solution will support multiple keys. Keys can be derived on the fly from a 
 4) Return result.
 
 * Keys' attributes contain usage flag: encryption/decryption, signing, and both. (TODO: Should this be delegated to web application via key handle or key ID?)
-* Requirement on client software: Client software needs to know the public key related to payload. Public keys or derived keys can't be read.
 * Master key is 256 bit long.
 
 #### Cross and same origin keys
