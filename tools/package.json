@@ -1,0 +1,26 @@
+{
+  "name": "nitrokey-webcrypt",
+  "version": "0.1.0",
+  "description": "## Summary",
+  "main": "index.js",
+  "dependencies": {
+    "bit-field": "^1.3.6"
+  },
+  "devDependencies": {},
+  "####devDependencies": {
+    "mermaid": "^8.5.0",
+    "mermaid-filter": "^1.4.5"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Nitrokey/nitrokey-webcrypt.git"
+  },
+  "author": "",
+  "bugs": {
+    "url": "https://github.com/Nitrokey/nitrokey-webcrypt/issues"
+  },
+  "homepage": "https://github.com/Nitrokey/nitrokey-webcrypt#readme"
+}
