@@ -381,35 +381,83 @@ This chapter is still a work in progress.
 
 [Webauthn]: https://www.w3.org/TR/webauthn/
 [FIDO2]: https://fidoalliance.org/specifications/
+[CTAP]: https://fidoalliance.org/specs/fido2/fido-client-to-authenticator-protocol-v2.1-rd-20191217.html
 
 ## Overview
 
-Each Nitrokey Webcrypt's request is sent over FIDO2 using MakeAssertion operation. It allows to transfer 255 bytes to the device, and receive 73 bytes back. The data fields used are:
+Nitrokey Webcrypt's communication is based on the Request-Response message exchange pattern, where communication is initiated always by the host, and each data update requires sending the request.
+
+Each Nitrokey Webcrypt's request is sent over Webauthn using MakeAssertion operation. It allows to transfer 255 bytes to the device, and receive 73 bytes back. The data fields used are:
 - `key handle` for sending to device;
 - `signature` for receiving from device.
+
 
 ## Commands
 For low-level communication two commands are required:
 - `WRITE` - to write to the Nitrokey Webcrypt's incoming buffer on the device;
-- `READ` - to read from the Nitrokey Webcrypt's result buffer on the device; 
+- `READ` - to read from the Nitrokey Webcrypt's outgoing buffer on the device; 
+
+Last packet of the `WRITE` protocol operation executes the command. If there are any results, these will be available in the outgoing buffer, from which client can download the content using `READ` commands. 
+In future this might be minimalized by removing the redundant first call to `READ` by moving first part of the results to the `WRITE` operation response (similarly to [CTAP]).
 
 
-### Packet structure
+## Packet structure
 | Offset | Length | Mnemonic | Comments |
 | ------ | ------ | -------  |  ------- |
-| 0 | 1 | WEBCRYPT_CONST | Always equal to `0x22`. |
-| 1 | 14 | NULL_HEADER | Nitrokey Webcrypt's magic value to recognize extension over FIDO2 |
-| 15 | 1 | COMM_ID | WRITE (`0x01`) or READ (`0x02`) |
-| 16 | 1 | PACKET_NUM | This packet number, 0-255 |
-| 17 | 1 | PACKET_CNT | Total packet count, 0-255 |
-| 18 | 1 | CHUNK_SIZE | Size of the data chunk, 0-255|
-| 19 | 1 | CHUNK_LEN | Length of the given data chunk, 0-CHUNK_SIZE |
-| 20 | CHUNK_LEN | DATA | Data to send  |
+| 0  | 1 | WEBCRYPT_CONST | Always equal to `0x22`. |
+| 1  | 4 | NULL_HEADER | Nitrokey Webcrypt's magic value to recognize extension over FIDO2 |
+| 5  | 1 | COMM_ID | Operation: WRITE (`0x01`) or READ (`0x02`) |
+| 6  | 1 | PACKET_NUM | This packet number, 0-255 |
+| 7  | 1 | PACKET_CNT | Total packet count, 0-255 |
+| 8  | 1 | CHUNK_SIZE | Size of the data chunk, 0-255|
+| 9  | 1 | CHUNK_LEN | Length of the given data chunk, 0-CHUNK_SIZE |
+| 10 | CHUNK_LEN | DATA | Data to send  |
 
-Having dynamic `CHUNK_SIZE` allows to change the communication parameters on the fly, and depending on the platform conditions.
-Magic value is:
-- `00 00 00 8C 27 90 f6 00 00`
+Notes:
+- Having dynamic `CHUNK_SIZE` allows to change the communication parameters on the fly, and depending on the platform conditions.
+- Introducing redundant information in the form of the packet number and count allows to identify potential transmission issues, like doubled packets (Windows 10 Webauthn handling issue).
+- Magic value is: `8C 27 90 F6`.
+- In future packet format might be modified to be more compact by removing redundant information (e.g. removing packet sequence information and current chunk lenght, but leaving current chunk size; similarly to [CTAP]).
 
+
+
+## Data packet structure
+
+| Offset | Length | Mnemonic | Comments |
+| ------ | ------ | -------  |  ------- |
+| 0  | 1 | COMMAND_ID | Command ID to execute |
+| 1  | CHUNK_LEN-1 | DATA | CBOR encoded arguments to the command |
+
+
+## Incoming packet format for WRITE
+| Offset | Length | Mnemonic | Comments |
+| ------ | ------ | -------  |  ------- |
+| 0  | 1 | RESULT | Result code |
+
+Execution's result code are described under each command description.
+
+## Incoming packet format for READ
+| Offset | Length | Mnemonic | Comments |
+| ------ | ------ | -------  |  ------- |
+| 0  | 2 | DATA_LEN | Data length N |
+| 2  | 1 | CMD_ID | Command ID that produced result |
+| 3  | DATA_LEN | DATA | Data received |
+
+
+## Encoding
+
+All parameters to the commands sent in the `DATA` field of the data packet are [CBOR](Concise Binary Object Representation, RFC7049) encoded key-value maps. This method was chosen due to following:
+- FIDO2 requires CBOR encoded parameters as well, hence parser and encoder are provided already for FIDO2 supporting devices.
+- CBOR handling libraries are available for all major languages, including JavaScript, where the client applications are meant to be developed.
+
+[CBOR]: https://tools.ietf.org/html/rfc7049
+
+## Full packet example
+
+Following is an example Nitrokey Webcrypt packet with `WRITE` operation for the `STATUS` command.
+This packet should be provided as an argument for the Webauthn MakeAssertion's `allowCredentials::id` parameter.
+
+![Packet diagram](./images/packet.svg)
 
 
 # FIDO2 actions relationship
