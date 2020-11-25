@@ -29,8 +29,8 @@ Nitrokey is an open source hardware USB key for data encryption and two-factor a
 ### Keys
 
 This solution will support multiple keys. Keys can be derived on the fly from a master key or imported and stored in the device (resident keys). All key operations (sign, decrypt) require the public key as a parameter. These operations follow this scheme:
-1) Check if public key matches any stored (resident) key and origin. If not, continue with step 2, otherwise step 3.
-2) Derive key: key = KDF(master key, public_key, origin) and verify it's validity against HMAC.
+1) Check if public key or key handle matches any stored (resident) key and origin. If not, continue with step 2, otherwise step 3.
+2) Derive key: key = KDF(master key, key_handle, origin) and verify it's validity against HMAC.
 3) Compute key operation with payload.
 4) Return result.
 
@@ -64,8 +64,8 @@ The seed is setup during initializing the device and used to derive a master key
 * Generate non-resident key
 * Write resident key - for externally existing keys only
 * Read public key of resident and derived keys
-* Sign(to_be_signed_data_hash, public_key, hash, origin)
-* Decrypt(to_be_decrypted_data, public_key, hash, origin)
+* Sign(to_be_signed_data_hash, key_handle, HMAC, origin)
+* Decrypt(to_be_decrypted_data, key_handle, HMAC, origin)
 * Status (Unlocked, version, available resident key slots)
 * Configure (see above)
 * Unlock - For U2F compatibility.
@@ -105,8 +105,8 @@ Using derived keys (as opposed to resident keys) by default provides the followi
 * Initial design and structure for commands - Setting up code structure and design for commands and implementations
 * Initialize and restore from seed - Master seed handling. Additional time for security analysis. Basic tests included.
 * Generate non-resident key - Key generation. Additional time for security analysis. Basic tests included.
-* Sign(to_be_signed_data_hash, public_key, HMAC, origin) - Expecting simple implementation. Basic tests included.
-* Decrypt(to_be_decrypted_data, public_key, HMAC, origin) - Expecting simple implementation. Basic tests included.
+* Sign(to_be_signed_data_hash, key_handle, HMAC, origin) - Expecting simple implementation. Basic tests included.
+* Decrypt(to_be_decrypted_data, key_handle, HMAC, origin) - Expecting simple implementation. Basic tests included.
 * Status (Unlocked, version, available resident key slots) - Expecting simple implementation. Basic tests included.
 * Additional firmware tests - Tests for everyday usage, edge cases, invalid use cases.
 
