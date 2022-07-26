@@ -1,6 +1,6 @@
 # Nitrokey Webcrypt Implementation Documentation
 
-This is a documentation of the implemented Nitrokey Webcrypt Milestone 1 interface in the Nitrokey FIDO2. Below a high level description of the commands, as well as low-level protocol details can be found. 
+This is a documentation of the implemented Nitrokey Webcrypt interface in the Nitrokey 3. Below a high level description of the commands, as well as low-level protocol details can be found. 
 
 Note: this implementation is early and is subject to change.
 
@@ -8,25 +8,37 @@ Note: this implementation is early and is subject to change.
 
 
 
-| ID | Mnemonic | Parameters | Returns | Au | Bt |
-| --- | ------ | ---------- | ---------- | --- | --- |
-| 0x0 | STATUS | None | `{UNLOCKED,VERSION,SLOTS,PIN_ATTEMPTS}` | - | - |
-| 0x1 | TEST_PING | Any / Raw | Any / Raw | - | - |
-| 0x2 | TEST_CLEAR | None | None | - | - |
-| 0x3 | TEST_REBOOT | None | None | - | - |
-| 0x4 | LOGIN | TBD | TBD | - | + |
-| 0x5 | LOGOUT | None | None | - | - |
-| 0x6 | FACTORY_RESET | None | None | - | + |
-| 0x10 | INITIALIZE_SEED | `{ENTROPY}` | `{MASTER,SALT}` | + | + |
-| 0x11 | RESTORE_FROM_SEED | `{MASTER,SALT}` | `{HASH}` | + | + |
-| 0x12 | GENERATE_KEY | None | `{PUBKEY,KEYHANDLE}` | + | + |
-| 0x13 | SIGN | `{HASH,KEYHANDLE}` | `{SIGNATURE,INHASH}` | + | + |
-| 0x14 | DECRYPT | `{DATA,KEYHANDLE,HMAC,ECCEKEY}` | `{DATA}` | + | + |
-| 0x15 | GENERATE_KEY_FROM_DATA | `{HASH}` | `{PUBKEY,KEYHANDLE}` | + | + |
+| ID   | Mnemonic                 | Parameters                      | Returns                                 | Au | Bt |
+|------|--------------------------|---------------------------------|-----------------------------------------| --- | --- |
+| 0x0  | STATUS                   | None                            | `{UNLOCKED,VERSION,SLOTS,PIN_ATTEMPTS}` | - | - |
+| 0x1  | TEST_PING                | Any / Raw                       | Any / Raw                               | - | - |
+| 0x2  | TEST_CLEAR               | None                            | None                                    | - | - |
+| 0x3  | TEST_REBOOT              | None                            | None                                    | - | - |
+| 0x4  | LOGIN                    | `{PIN}`                         | `{TP}`                                  | - | + |
+| 0x5  | LOGOUT                   | None                            | None                                    | - | - |
+| 0x6  | FACTORY_RESET            | None                            | None                                    | - | + |
+| 0x7  | *RESERVED*               | -                               | -                                       | - | + |
+| 0x8  | SET_CONFIGURATION        | `{CONFIRMATION}`                | None                                    | - | + |
+| 0x9  | GET_CONFIGURATION        | None                            | `{CONFIRMATION}`                        | - | + |
+| 0x0A | SET_PIN                  | `{PIN}`                         | None                                    | - | + |
+| 0x0B | CHANGE_PIN               | `{PIN,NEWPIN}`                  | None                                    | - | + |
+| 0x10 | INITIALIZE_SEED          | `{ENTROPY}`                     | `{MASTER,SALT}`                         | + | + |
+| 0x11 | RESTORE_FROM_SEED        | `{MASTER,SALT}`                 | `{HASH}`                                | + | + |
+| 0x12 | GENERATE_KEY             | None                            | `{PUBKEY,KEYHANDLE}`                    | + | + |
+| 0x13 | SIGN                     | `{HASH,KEYHANDLE}`              | `{SIGNATURE,INHASH}`                    | + | + |
+| 0x14 | DECRYPT                  | `{DATA,KEYHANDLE,HMAC,ECCEKEY}` | `{DATA}`                                | + | + |
+| 0x15 | GENERATE_KEY_FROM_DATA   | `{HASH}`                        | `{PUBKEY,KEYHANDLE}`                    | + | + |
+| 0x16 | GENERATE_RESIDENT_KEY    | None                            | `{PUBKEY,KEYHANDLE}`                    | + | + |
+| 0x17 | READ_RESIDENT_KEY_PUBLIC | `{KEYHANDLE}`                   | `{PUBKEY,KEYHANDLE}`                    | + | + |
+| 0x18 | DISCOVER_RESIDENT_KEYS   | TBD                             | TBD                                     | + | + |
+| 0x19 | WRITE_RESIDENT_KEY       | `{RAW_KEY_DATA}`                | `{PUBKEY,KEYHANDLE}`                    | + | + |
 
-where for the given command:
+
+
+Where for the given command:
 - ID is a hexadecimal integer;
 - `TEST_` prefixed commands are available only in the development firmware;
+- the TBD acronym means that the work for that command is planned
 - plus `+` sign means a requirement for operation named by this specific column, whereas minus `-` sign is the opposite;
 - column `Au`, short from authentication, marks authentication requirement with the `LOGIN` command, before using this command;
 - column `Bt`, short from button, marks touch-button press requirement after the command is called, to proceed further.
@@ -59,8 +71,9 @@ MASTER[32],SALT[8] = random_data[40] ^ ENTROPY[40]
 
 
 ### Input description
-| --- | ------ | ---------- | 
-| `ENTROPY` | 40 | Client-sourced bytes to be mixed with HWRNG result |
+ | Field | Size [B] | Description | 
+ | --- | ------ | ---------- |  
+ | `ENTROPY` | 40 | Client-sourced bytes to be mixed with HWRNG result |  
 
 ### Output description
 | Field | Size [B] | Description |
@@ -109,19 +122,56 @@ HASH = SHA256(MASTER|SALT)
 
 
 
+## Key Handle description
+
+### Wrapping
+
+The wrapping operation is reused from the fido-authenticator crate:
+1. The private key is wrapped using a persistent wrapping key using ChaCha20-Poly1305 AEAD algorithm.
+2. The wrapped key is embedded into a KeyHandle data structure, containing additional metadata (RP ID, Usage Flags).
+3. The serialized KeyHandle structure is finally CBOR serialized and encrypted, resulting in a binary blob to be used with other commands.
 
 
+```text
+key_private - private key structure
+Encrypt = ChaCha20-Poly1305
+Serialize = CBOR
+key_private_enc = Encrypt(Serialize(key_private))
+key_handle = Encrypt(Serialize(key_private_enc))  
+key_pub[64] = ECC_compute_public_key(key_private)
+PUBKEY = key_pub
+KEYHANDLE = key_handle
+```
+
+### Unwrapping
+
+The deserialization method of the KeyHandle is reused from the fido-authenticator project.
+1. The encrypted KeyHandle is decrypted and deserialized to a KeyHandle structure using persistent encryption key.
+2. From the resulting KeyHandle structure the wrapped private key is decrypted and deserialized
+3. Finally, the wrapped private key is imported to the volatile in-memory keystore, and used for the further operations.
+
+```text
+key_handle - serialized and encrypted KeyHandle structure
+Decrypt = ChaCha20-Poly1305
+Deserialize = CBOR
+key_private_enc = Decrypt(Deserialize(key_handle))  
+key_private = Decrypt(Deserialize(key_private_enc))
+```
+
+### Resident Keys
+
+The KeyHandles for Resident Keys are a serialized internal KeyID (16 B) identifier, along with some metadata fields reserved for the future use. This might change in the future.
 
 ## Generate non-resident key
-| ID | Mnemonic | Parameters | Returns | Au | Bt |
-| --- | ------ | ---------- | ---------- | --- | --- |
-| 0x12 | GENERATE_KEY | None | `{PUBKEY,KEYHANDLE}` | + | + |
-| 0x15 | GENERATE_KEY_FROM_DATA | `{HASH}` | `{PUBKEY,KEYHANDLE}` | + | + |
+| ID   | Mnemonic               | Parameters | Returns              | Au    | Bt  |
+|------|------------------------|------------|----------------------|-------|-----|
+| 0x12 | GENERATE_KEY           | None       | `{PUBKEY,KEYHANDLE}` | +     | +   |
+| 0x15 | GENERATE_KEY_FROM_DATA | `{HASH}`   | `{PUBKEY,KEYHANDLE}` | +     | +   |
 
 
 ### From hash (GENERATE_KEY_FROM_DATA)
 
-For the actual key generation the FIDO U2F / FIDO2 key generation and wrapping mechanism was reused, but with different constants set. The passphrase is processed through a hash function (e.g. Argon2) with known parameters client side, and the hash result is sent to the device. The received hash is mixed through PBKDF2 with device's salt, then HMAC'ed with the Nitrokey Webcrypt's master key `WC_MASTER_KEY` along with the authentication tag. Finally it is encrypted through another secret key - `WC_MASTER_ENC_KEY`. 
+For the actual key generation the FIDO U2F / FIDO2 key generation and wrapping mechanism was reused. The passphrase is processed through a hash function (e.g. Argon2) with known parameters client side, and the hash result is sent to the device. The received hash is HMAC'ed with the Nitrokey Webcrypt's master key `WC_MASTER_KEY`.
 
 The hash function selection, use and parameters will be standardized in the future.
 
@@ -129,25 +179,15 @@ The hash function selection, use and parameters will be standardized in the futu
 # Browser
 hash[32] = Argon2(passphrase)
 # Device
-key_data_raw[32] = PBKDF2(hash, salt, 100)
+key_data_raw[32] = HMAC256(hash)
 key_pub, key_priv = wc_new_keypair(key_data_raw, appid)
 ```
 
-Reused FIDO U2F key-wrapping implementation below:
-
-```text
-# wc_new_keypair() implementation
-tag[16] = HMAC(WC_MASTER_KEY, key_data_raw|appid)
-key_priv_plain[32] = HMAC(WC_MASTER_KEY, tag|key_data_raw)
-key_priv[32] = AES256(WC_MASTER_ENC_KEY, key_priv_plain)
-key_pub[64] = ECC_compute_public_key(key_priv)
-key_handle[48] = tag|key_data_raw
-PUBKEY = key_pub
-KEYHANDLE = key_handle
-```
+See the wrapping algorithm in the Key Handle description chapter.
 
 To discuss:
-- if `WC_MASTER_ENC_KEY` use is required to derive a strong key. From the UX perspective it might require user to store another 20-24 words of the backup *Word Seed*, which is not desired.
+- hash function selection and parameters;
+- introducing a KDF-DO like object, containing parameters needed to calculate the hash from the passphrase client side.
 
 #### Input description
 | Field | Size [B] | Description |
@@ -155,10 +195,10 @@ To discuss:
 | `HASH` | 32 | Source data for key generation |
 
 #### Output description
-| Field | Size [B] | Description |
-| --- | ------ | ---------- | 
-| `PUBKEY` | 64 | Raw ECC public key |
-| `KEYHANDLE` | 48 | Key handle |
+| Field       | Size [B] | Description |
+|-------------|----------| ---------- | 
+| `PUBKEY`    | 64       | Raw ECC public key |
+| `KEYHANDLE` | 250      | Key handle |
 
 ### Errors
 Both commands return the same errors listed below.
@@ -187,10 +227,10 @@ key_pub, key_priv = wc_new_keypair(random_data, appid)
 None
 
 #### Output description
-| Field | Size [B] | Description |
-| --- | ------ | ---------- | 
-| `PUBKEY` | 64 | Raw ECC public key |
-| `KEYHANDLE` | 48 | Key handle |
+| Field       | Size [B] | Description |
+|-------------|----------| ---------- | 
+| `PUBKEY`    | 64       | Raw ECC public key |
+| `KEYHANDLE` | 250      | Key handle |
 
 ### Errors
 | ID | Mnemonic | Description |
@@ -206,38 +246,31 @@ Work in progress.
 
 To implement:
 - Add cross-origin keys;
-- Key attributes (encoded in TAG part);
+- Key attributes;
 To discuss: 
-- Remove the additional master encryption secret, and replace HMAC with AES GCM or ChaCha20/ChaCha20-Poly1305; 
+- Replace HMAC with AES GCM or ChaCha20/ChaCha20-Poly1305; 
 - Introduce MAC-then-encrypt/MAC-then-pad-then-encrypt if needed. 
-
-
-
-## Read public key of resident keys
-To be done (Milestone 3). Command not implemented yet.
-
 
 
 
 ## Sign (SIGN)
 
-| ID | Mnemonic | Parameters | Returns | Au | Bt |
-| --- | ------ | ---------- | ---------- | --- | --- |
-| 0x13 | SIGN | `{HASH,KEYHANDLE}` | `{SIGNATURE,HASH}` | + | + |
+| ID | Mnemonic | Parameters | Returns             | Au | Bt |
+| --- | ------ | ---------- |---------------------| --- | --- |
+| 0x13 | SIGN | `{HASH,KEYHANDLE}` | `{SIGNATURE,INHASH}` | + | + |
 
 Using key encoded in `KEYHANDLE` parameter command makes signature over the input hash `HASH` using ECDSA. Returns `SIGNATURE` as a result, as well as the incoming hash `HASH`. 
 `KEYHANDLE` authenticity (whether it was generated with given *Master Key* and to use for given *Origin*) is verified before use.
 Incoming `HASH` data is repeated on the output for signature confirmation.
 The curve used by default is `secp256r1` (NIST P-256 Random). 
 
-Implementation is reused from the FIDO U2F key-wrapped authentication. In pseudocode:
+In pseudocode:
 ```text
-tag[16], key_data_raw[32] = keyhandle[48]
-if not authentic(tag): abort
-key_pub, key_priv = wc_new_keypair(key_data_raw, appid)
-signature = ECC_SIGN(key_priv, hash)
-HASH=HASH
+SIGNATURE = Sign(KEYHANDLE, hash)
+INHASH = HASH
 ```
+
+See the wrapping algorithm in the Key Handle description chapter.
 
 To implement:
 - Support `secp256k1` curve (NIST P-256 Koblitz).
@@ -245,17 +278,17 @@ To implement:
 
 
 ### Input description
-| Field | Size [B] | Description |
-| --- | ------ | ---------- | 
-| `HASH` | 32 | Raw data to sign, typically SHA256 hash |
-| `KEYHANDLE` | 48 | Key handle |
+| Field        | Size [B] | Description |
+|--------------|----------| ---------- | 
+| `HASH`       | 32       | Raw data to sign, typically SHA256 hash |
+| `KEYHANDLE`  | 250      | Key handle |
 
 
 ### Output description
-| Field | Size [B] | Description |
-| --- | ------ | ---------- | 
+| Field       | Size [B] | Description |
+|-------------| ------ | ---------- | 
 | `SIGNATURE` | 64 | ECC signature |
-| `HASH` | 32 | Incoming raw data to sign |
+| `INHASH`    | 32 | Incoming raw data to sign |
 
 ### Errors
 | ID | Mnemonic | Description |
@@ -275,32 +308,31 @@ Decrypts data given in the `DATA` field, using `KEYHANDLE` *Key Handle* for rege
 `KEYHANDLE` authenticity (whether it was generated with given *Master Key* and to use for given *Origin*) is verified before use.
 
 Requires PKCS#7 ([RFC 5652]) padded data to the length of multiple of 32.
-Work in progress.
 
 Pseudocode:
 ```text
-# in: DATA,KEYHANDLE,HMAC_in,ECCEKEY
-tag[16], key_data_raw[32] = KEYHANDLE[48]
-if not authentic(tag): abort
-key_pub, key_priv = wc_new_keypair(key_data_raw, appid)
 shared_secret = ecc256_shared_secret(ECCEKEY)
 data_len = len(DATA)
-hmac_calc = HMAC(shared_secret, DATA|ECCEKEY|data_len|KEYHANDLE)
-if hmac_calc != HMAC_in: abort
-plaintext = AES256(shared_secret, DATA)
+hmac_calc = HMAC256(shared_secret, DATA|ECCEKEY|data_len|KEYHANDLE)
+if hmac_calc != HMAC: abort
+plaintext = Decrypt(AES256, shared_secret, DATA)
 ```
+
+
+See the wrapping algorithm in the Key Handle description chapter.
+
 
 [RFC 5652]: https://tools.ietf.org/html/rfc5652#section-6.3
 
 
 
 ### Input description
-| Field | Size [B] | Description |
-| --- | ------ | ---------- | 
-| `DATA` | 32-128* | Data to decrypt |
-| `KEYHANDLE` | 48 | Key handle |
-| `HMAC` | 32 | Calculated HMAC |
-| `ECCEKEY` | 64 | Raw ECC public key |
+| Field        | Size [B] | Description |
+|--------------|----------| ---------- | 
+| `DATA`       | 32-128*  | Data to decrypt |
+| `KEYHANDLE`  | 250      | Key handle |
+| `HMAC`       | 32       | Calculated HMAC |
+| `ECCEKEY`    | 64       | Raw ECC public key |
 
 ### Output description
 | Field | Size [B] | Description |
@@ -320,24 +352,25 @@ plaintext = AES256(shared_secret, DATA)
 ## Status (STATUS)
 | ID | Mnemonic | Parameters | Returns | Au | Bt |
 | --- | ------ | ---------- | ---------- | --- | --- |
-| 0x0 | STATUS | None | `{VERSION,SLOTS,PIN_ATTEMPTS}` | - | - |
+| 0x0 | STATUS | None | `{UNLOCKED,VERSION,SLOTS,PIN_ATTEMPTS}` | - | - |
 
 
 Command requires authentication: no.
-Work in progress.
 
-To discuss:
+#### To discuss
 - should `SLOTS` number not be hidden to avoid fingerprinting.
 
 ### Input description
 None
 
 ### Output description
-| Field | Size [B] | Description |
-| --- | ------ | ---------- | 
-| `VERSION` | 1 | implemented Nitrokey Webcrypt's version |
-| `SLOTS` | 1 | number of left available Resident Keys slots |
-| `PIN_ATTEMPTS` | 1 | FIDO2 PIN attempt counter's current value |
+
+| Field | Size [B] | Description                                             |
+| --- | ------ |---------------------------------------------------------| 
+| `VERSION` | 1 | implemented Nitrokey Webcrypt's version                 |
+| `SLOTS` | 1 | number of left available Webcrypt's Resident Keys slots |
+| `PIN_ATTEMPTS` | 1 | PIN attempt counter's current value                     |
+| `UNLOCKED` | 1 | Return true if the session is open                      |
 
 ### Errors
 | ID | Mnemonic | Description |
@@ -346,12 +379,173 @@ None
 
 
 
-## Configure
-To be done (Milestone 4). Command not implemented yet.
 
 
-## Write resident key
-To be done (Milestone 3). Command not implemented yet.
+## Login (LOGIN)
+
+| ID     | Mnemonic | Parameters          | Returns             | Au   | Bt   |
+|--------|----------|---------------------|---------------------|------|------|
+| 0x4  | LOGIN    | `{PIN}`             | `{TP}`              | - | + |
+
+
+This command allows to establish session by returning a session token upon presenting the correct PIN.
+If the PIN is invalid, the PIN attempt counter will be decreased. Once the latter reaches 0, the only further available
+operation will be FACTORY_RESET. 
+
+### Input description
+
+| Field   | Size [B] | Description            | 
+|---------|----------|------------------------|  
+| `PIN`   | 4-64     | Current Webcrypt's PIN |
+
+### Output description
+
+| Field  | Size [B] | Description                              |
+|--------|----------|------------------------------------------| 
+| `TP`   | 32       | Session token, a.k.a. temporary password |
+
+### Errors
+
+| ID       | Mnemonic                | Description                        |
+|----------|-------------------------|------------------------------------| 
+| 0xF1     | ERR_INVALID_PIN         | The presented PIN is invalid       |
+| 0xF2     | ERR_NOT_ALLOWED         | The PIN attempt counter is used up |
+| 0xF5     | ERR_FAILED_LOADING_DATA | Error during preparing output      |
+
+
+
+## Logout (LOGOUT)
+
+| ID     | Mnemonic   | Parameters    | Returns                 | Au   | Bt   |
+|--------|------------|---------------|-------------------------|------|------|
+| 0x5  | LOGOUT     | None          | None                    | - | - |
+
+Clear all session related data, and remove all secrets from the memory.
+
+### Errors
+
+None
+
+## Factory reset (FACTORY_RESET)
+
+| ID     | Mnemonic            | Parameters  | Returns             | Au   | Bt   |
+|--------|---------------------|-------------|---------------------|------|------|
+| 0x6  | FACTORY_RESET       | None        | None                | - | + |
+
+Removes all the currently stored user data, and prepares the device for the new use.
+
+Note: this command does not need PIN confirmation or session set.
+
+### Errors
+None
+
+
+
+## Get and Set configuration (GET_CONFIGURATION, SET_CONFIGURATION)
+
+| ID     | Mnemonic              | Parameters  | Returns         | Au   | Bt   |
+|--------|-----------------------|-------------|-----------------|------|------|
+| 0x8  | SET_CONFIGURATION     | `{CONFIRMATION}`                | None                                    | - | + |
+| 0x9  | GET_CONFIGURATION     | None                            | `{CONFIRMATION}`                        | - | + |
+
+
+This command allows to change the user settings in Webcrypt.
+Work in progress.
+
+### Input/output description
+
+|  Field    | Size [B] | Description             | 
+|-----------|----------|-------------------------|  
+| `CONFIRMATION` | 1        | Confirmation mode (WIP) |
+
+### Errors
+
+| ID      | Mnemonic                | Description                   |
+|---------|-------------------------|-------------------------------| 
+| 0xF5    | ERR_FAILED_LOADING_DATA | Error during preparing output |
+
+
+
+
+
+## PIN management (SET_PIN, CHANGE_PIN)
+
+
+| ID     | Mnemonic        | Parameters            | Returns            | Au   | Bt   |
+|--------|-----------------|-----------------------|--------------------|------|------|
+| 0x0A | SET_PIN         | `{PIN}`               | None               | - | + |
+| 0x0B | CHANGE_PIN      | `{PIN,NEWPIN}`        | None               | - | + |
+
+
+The SET_PIN and CHANGE_PIN commands are for the PIN handling. The former allows to set the PIN, when there is none (e.g. just after factory reset operation), but afterwards it is not allowed to work. The further PIN changes require CHANGE_PIN command to be used.
+The PIN can be of length between 4 and 64 bytes.
+
+### Input description
+
+|  Field    | Size [B] | Description                        | 
+|-----------|----------|------------------------------------|  
+| `PIN` | 4-64     | SET_PIN: the current PIN to be set |
+| `PIN` | 4-64     | CHANGE_PIN: the current PIN        |
+| `NEWPIN` | 4-64       | CHANGE_PIN: the new PIN            |
+
+### Output description
+None
+
+### Errors
+
+| ID      | Mnemonic                | Description                                                         |
+|---------|-------------------------|---------------------------------------------------------------------| 
+| 0xF5    | ERR_FAILED_LOADING_DATA | Error during preparing output                                       |
+| 0xF1    | INVALID_PIN             | The provided PIN is invalid, or wrong length                        |
+| 0xF2    | ERR_NOT_ALLOWED         | SET_PIN: command use is not allowed, because the PIN is already set |
+
+
+
+## Resident Keys Handling
+
+| ID     | Mnemonic        | Parameters  | Returns         | Au   | Bt   |
+|--------|-----------------|-------------|-----------------|------|------|
+| 0x16 | GENERATE_RESIDENT_KEY    | None                            | `{PUBKEY,KEYHANDLE}`                    | + | + |
+| 0x17 | READ_RESIDENT_KEY_PUBLIC | `{KEYHANDLE}`                   | `{PUBKEY,KEYHANDLE}`                    | + | + |
+| 0x18 | DISCOVER_RESIDENT_KEYS   | TBD                             | TBD                                     | + | + |
+| 0x19 | WRITE_RESIDENT_KEY       | `{RAW_KEY_DATA}`                | `{PUBKEY,KEYHANDLE}`                    | + | + |
+
+Resident Keys (RK) are the keys stored on the device, allowing to be identified with a shorter keyhandle, or instead used as a storage means for the Relying Party, relieving it from the keeping of the secret material completely.
+Resident Keys can be generated, imported and used in the same way as their derived counterparts with the SIGN and DECRYPT commands. 
+
+Detailed description:
+- GENERATE_RESIDENT_KEY - generates a RK on the device using local means, and returns a keyhandle to it;
+- READ_RESIDENT_KEY_PUBLIC - allows to read a public key of the given RK;
+- DISCOVER_RESIDENT_KEYS - lists all the RKs available for the given Relying Party;
+- WRITE_RESIDENT_KEY - writes raw key data, as received from the RP, and returns a keyhandle to it.
+
+
+### Input description
+
+| Field           | Size [B] | Description                                                       | 
+|-----------------|----------|-------------------------------------------------------------------|  
+| `KEYHANDLE`     | 250      | The keyhandle bytes, allowing to either identify the Resident Key |
+| `RAW_KEY_DATA`  | 32       | Raw key data, to be saved as a Resident Key                       |
+
+### Output description
+
+| Field          | Size [B]  | Description                                                       |
+|----------------|-----------|-------------------------------------------------------------------| 
+| `PUBKEY`       | 32        | The calculated public key for the given keyhandle                 |
+| `KEYHANDLE`    | 250       | The keyhandle bytes, allowing to either identify the Resident Key |
+
+### Errors
+
+| ID      | Mnemonic                | Description                   |
+|---------|-------------------------|-------------------------------| 
+| 0xF5    | ERR_FAILED_LOADING_DATA | Error during preparing output |
+
+
+
+
+
+
+
 
 ## Test commands
 
@@ -365,21 +559,25 @@ These test commands are introduced to help in the development of the client appl
 `TEST_PING` - send and receive data for transport tests (loopback). 
 
 Not implemented at the moment:
-- `TEST_CLEAR` - clear current Nitrokey Webcrypt's state;
+- `TEST_CLEAR` - clear the current Nitrokey Webcrypt's state;
 - `TEST_REBOOT` - reboot device.
 
 
 ## Common errors table
 Following errors are common to all commands requiring authorization.
 
-| ID | Mnemonic | Description |
-| --- | ------ | ---------- |
-| 0xF0 | ERR_REQ_AUTH | Command needs to be authorized by PIN * |
-| 0xF1 | ERR_INVALID_PIN | Provided PIN is invalid |
-| 0xF4 | ERR_USER_NOT_PRESENT | User has not pressed touch button in time |
+| ID | Mnemonic                  | Description                                                    |
+| --- |---------------------------|----------------------------------------------------------------|
+| 0xF0 | ERR_REQ_AUTH              | Command needs to be authorized by PIN *                        |
+| 0xF1 | ERR_INVALID_PIN           | Provided PIN is invalid                                        |
+| 0xF2 | ERR_NOT_ALLOWED            | The given key's origin does not match the one of the request   |
+| 0xF3 | ERR_BAD_FORMAT            | The given key's origin does not match the one of the request   |
+| 0xF4 | ERR_USER_NOT_PRESENT      | User has not pressed touch button in time                      |
+| 0xF5 | ERR_FAILED_LOADING_DATA   | There was an error while preparing the result of the execution |
+| 0xFD | ERR_BAD_ORIGIN            | The given key's origin does not match the one of the request   |
 
 Notes:
-- * `ERR_REQ_AUTH` should be returned, when: for FIDO U2F the session token was not provided in the data, for FIDO2 the PIN was not requested from the user (`userVerification: "discouraged"`)
+- (*) `ERR_REQ_AUTH` should be returned, when: for FIDO U2F the session token was not provided in the data, for FIDO2 the PIN was not requested from the user (`userVerification: "discouraged"`)
 
 
 # Protocol
@@ -407,26 +605,26 @@ For low-level communication two commands are required:
 - `READ` - to read from the Nitrokey Webcrypt's outgoing buffer on the device; 
 
 Last packet of the `WRITE` protocol operation executes the command. If there are any results, these will be available in the outgoing buffer, from which client can download the content using `READ` commands. 
-In future this might be minimalized by removing the redundant first call to `READ` by moving first part of the results to the `WRITE` operation response (similarly to [CTAP]).
+in the future this might be minimalized by removing the redundant first call to `READ` by moving first part of the results to the `WRITE` operation response (similarly to [CTAP]).
 
 
 ## Packet structure
-| Offset | Length | Mnemonic | Comments |
-| ------ | ------ | -------  |  ------- |
-| 0  | 1 | WEBCRYPT_CONST | Always equal to `0x22`. |
-| 1  | 4 | NULL_HEADER | Nitrokey Webcrypt's magic value to recognize extension over FIDO2 |
-| 5  | 1 | COMM_ID | Operation: WRITE (`0x01`) or READ (`0x02`) |
-| 6  | 1 | PACKET_NUM | This packet number, 0-255 |
-| 7  | 1 | PACKET_CNT | Total packet count, 0-255 |
-| 8  | 1 | CHUNK_SIZE | Size of the data chunk, 0-255|
-| 9  | 1 | CHUNK_LEN | Length of the given data chunk, 0-CHUNK_SIZE |
-| 10 | CHUNK_LEN | DATA | Data to send  |
+| Offset | Length    | Mnemonic       | Comments                                                          |
+|--------|-----------|----------------|-------------------------------------------------------------------|
+| 0      | 1         | WEBCRYPT_CONST | Always equal to `0x22`.                                           |
+| 1      | 4         | __HEADER       | Nitrokey Webcrypt's magic value to recognize extension over FIDO2 |
+| 5      | 1         | COMM_ID        | Operation: WRITE (`0x01`) or READ (`0x02`)                        |
+| 6      | 1         | PACKET_NUM     | This packet number, 0-255                                         |
+| 7      | 1         | PACKET_CNT     | Total packet count, 0-255                                         |
+| 8      | 1         | CHUNK_SIZE     | Size of the data chunk, 0-255                                     |
+| 9      | 1         | CHUNK_LEN      | Length of the given data chunk, 0-CHUNK_SIZE                      |
+| 10     | CHUNK_LEN | DATA           | Data to send                                                      |
 
 Notes:
 - Having dynamic `CHUNK_SIZE` allows to change the communication parameters on the fly, and depending on the platform conditions.
-- Introducing redundant information in the form of the packet number and count allows to identify potential transmission issues, like doubled packets (Windows 10 Webauthn handling issue).
-- Magic value is: `8C 27 90 F6`.
-- In future packet format might be modified to be more compact by removing redundant information (e.g. removing packet sequence information and current chunk lenght, but leaving current chunk size; similarly to [CTAP]).
+- Introducing redundant information in the form of the packet number and count allows identifying potential transmission issues, like doubled packets (Windows 10 Webauthn handling issue).
+- Magic value is: `__HEADER = 0x8C2790F6`.
+- In the future packet format might be modified to be more compact by removing redundant information (e.g. removing packet sequence information and the current chunk length, but leaving the chunk size; similarly to [CTAP]).
 
 
 
