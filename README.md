@@ -10,10 +10,10 @@ Nitrokey is an open source hardware USB key for data encryption and two-factor a
 * *Web application* is Javascript-based application, running in browser and potentially communicating between it and the servers in the internet.
 * *Client software* is any software communicating with the WebCrypt-compliant device, directly or through a browser. 
 * *Browser* is one of the platforms running the *Client software*.
-* *Master key* is the main secret key stored on the device. Can be represented by *Word Seed* for backup purposes.
+* *Main key* is the main secret key stored on the device. Can be represented by *Word Seed* for backup purposes.
 * *Resident key* is different to FIDO's resident keys, but the concept is similar. Webcrypt's Resident Keys are stored on the device, created either by importing or generation.
-* *Derived key* is different to FIDO's derived keys, but the concept is similar. The keys are derived from the master secret and given service metadata like using RPID (including domain name) or users additional passphrase.
-* *Seed*, or *Word Seed*, is a 24-30 words closed-dictionary phrase, which allows to restore the *Master key* on any device.
+* *Derived key* is different to FIDO's derived keys, but the concept is similar. The keys are derived from the main secret and given service metadata like using RPID (including domain name) or users additional passphrase.
+* *Seed*, or *Word Seed*, is a 24-30 words closed-dictionary phrase, which allows to restore the *Main key* on any device.
 * *PIN* is an attempt-count limited password or passphrase, which unlocks the device and allows to run Webcrypt operations.
 * *Backup* is a data structure allowing to restore the state of the device on the same or another instance.
 * *KDF* stands for key derivation function and is a cryptographic hash function deriving a secret key from the input like passphrase using pseudorandom function.
@@ -28,14 +28,14 @@ Nitrokey is an open source hardware USB key for data encryption and two-factor a
 
 ### Keys
 
-This solution will support multiple keys. Keys can be derived on the fly from a master key or imported and stored in the device (resident keys). All key operations (sign, decrypt) require the public key as a parameter. These operations follow this scheme:
+This solution will support multiple keys. Keys can be derived on the fly from a main key or imported and stored in the device (resident keys). All key operations (sign, decrypt) require the public key as a parameter. These operations follow this scheme:
 1) Check if public key or key handle matches any stored (resident) key and origin. If not, continue with step 2, otherwise step 3.
-2) Derive key: key = KDF(master key, key_handle, origin) and verify it's validity against HMAC.
+2) Derive key: key = KDF(main key, key_handle, origin) and verify it's validity against HMAC.
 3) Compute key operation with payload.
 4) Return result.
 
 * Keys' attributes contain usage flag: encryption/decryption, signing, and both. (TODO: Should this be delegated to web application via key handle or key ID?)
-* Master key is 256 bit long.
+* Main key is 256 bit long.
 
 #### Cross and same origin keys
 
