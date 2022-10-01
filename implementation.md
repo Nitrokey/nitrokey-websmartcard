@@ -8,30 +8,30 @@ Note: this implementation is early and is subject to change.
 
 
 
-| ID   | Mnemonic                 | Parameters                      | Returns                                 | Au | Bt |
-|------|--------------------------|---------------------------------|-----------------------------------------| --- | --- |
-| 0x0  | STATUS                   | None                            | `{UNLOCKED,VERSION,SLOTS,PIN_ATTEMPTS}` | - | - |
-| 0x1  | TEST_PING                | Any / Raw                       | Any / Raw                               | - | - |
-| 0x2  | TEST_CLEAR               | None                            | None                                    | - | - |
-| 0x3  | TEST_REBOOT              | None                            | None                                    | - | - |
-| 0x4  | LOGIN                    | `{PIN}`                         | `{TP}`                                  | - | + |
-| 0x5  | LOGOUT                   | None                            | None                                    | - | - |
-| 0x6  | FACTORY_RESET            | None                            | None                                    | - | + |
-| 0x7  | *RESERVED*               | -                               | -                                       | - | + |
-| 0x8  | SET_CONFIGURATION        | `{CONFIRMATION}`                | None                                    | - | + |
-| 0x9  | GET_CONFIGURATION        | None                            | `{CONFIRMATION}`                        | - | + |
-| 0x0A | SET_PIN                  | `{PIN}`                         | None                                    | - | + |
-| 0x0B | CHANGE_PIN               | `{PIN,NEWPIN}`                  | None                                    | - | + |
-| 0x10 | INITIALIZE_SEED          | `{ENTROPY}`                     | `{MASTER,SALT}`                         | + | + |
-| 0x11 | RESTORE_FROM_SEED        | `{MASTER,SALT}`                 | `{HASH}`                                | + | + |
-| 0x12 | GENERATE_KEY             | None                            | `{PUBKEY,KEYHANDLE}`                    | + | + |
-| 0x13 | SIGN                     | `{HASH,KEYHANDLE}`              | `{SIGNATURE,INHASH}`                    | + | + |
-| 0x14 | DECRYPT                  | `{DATA,KEYHANDLE,HMAC,ECCEKEY}` | `{DATA}`                                | + | + |
-| 0x15 | GENERATE_KEY_FROM_DATA   | `{HASH}`                        | `{PUBKEY,KEYHANDLE}`                    | + | + |
-| 0x16 | GENERATE_RESIDENT_KEY    | None                            | `{PUBKEY,KEYHANDLE}`                    | + | + |
-| 0x17 | READ_RESIDENT_KEY_PUBLIC | `{KEYHANDLE}`                   | `{PUBKEY,KEYHANDLE}`                    | + | + |
-| 0x18 | DISCOVER_RESIDENT_KEYS   | TBD                             | TBD                                     | + | + |
-| 0x19 | WRITE_RESIDENT_KEY       | `{RAW_KEY_DATA}`                | `{PUBKEY,KEYHANDLE}`                    | + | + |
+| ID   | Mnemonic                 | Parameters                        | Returns                                 | Au  | Bt  |
+|------|--------------------------|-----------------------------------|-----------------------------------------|-----|-----|
+| 0x0  | STATUS                   | None                              | `{UNLOCKED,VERSION,SLOTS,PIN_ATTEMPTS}` | -   | -   |
+| 0x1  | TEST_PING                | Any / Raw                         | Any / Raw                               | -   | -   |
+| 0x2  | TEST_CLEAR               | None                              | None                                    | -   | -   |
+| 0x3  | TEST_REBOOT              | None                              | None                                    | -   | -   |
+| 0x4  | LOGIN                    | `{PIN}`                           | `{TP}`                                  | -   | +   |
+| 0x5  | LOGOUT                   | None                              | None                                    | -   | -   |
+| 0x6  | FACTORY_RESET            | None                              | None                                    | -   | +   |
+| 0x7  | *RESERVED*               | -                                 | -                                       | -   | +   |
+| 0x8  | SET_CONFIGURATION        | `{CONFIRMATION}`                  | None                                    | -   | +   |
+| 0x9  | GET_CONFIGURATION        | None                              | `{CONFIRMATION}`                        | -   | +   |
+| 0x0A | SET_PIN                  | `{PIN}`                           | None                                    | -   | +   |
+| 0x0B | CHANGE_PIN               | `{PIN,NEWPIN}`                    | None                                    | -   | +   |
+| 0x10 | INITIALIZE_SEED          | `{ENTROPY}`                       | `{MASTER,SALT}`                         | +   | +   |
+| 0x11 | RESTORE_FROM_SEED        | `{MASTER,SALT}`                   | `{HASH}`                                | +   | +   |
+| 0x12 | GENERATE_KEY             | None                              | `{PUBKEY,KEYHANDLE}`                    | +   | +   |
+| 0x13 | SIGN                     | `{HASH,KEYHANDLE}`                | `{SIGNATURE,INHASH}`                    | +   | +   |
+| 0x14 | DECRYPT                  | `{DATA,KEYHANDLE,[HMAC,ECCEKEY]}` | `{DATA}`                                | +   | +   |
+| 0x15 | GENERATE_KEY_FROM_DATA   | `{HASH}`                          | `{PUBKEY,KEYHANDLE}`                    | +   | +   |
+| 0x16 | GENERATE_RESIDENT_KEY    | None                              | `{PUBKEY,KEYHANDLE}`                    | +   | +   |
+| 0x17 | READ_RESIDENT_KEY_PUBLIC | `{KEYHANDLE}`                     | `{PUBKEY,KEYHANDLE}`                    | +   | +   |
+| 0x18 | DISCOVER_RESIDENT_KEYS   | TBD                               | TBD                                     | +   | +   |
+| 0x19 | WRITE_RESIDENT_KEY       | `{RAW_KEY_DATA,[KEY_TYPE]}`       | `{PUBKEY,KEYHANDLE}`                    | +   | +   |
 
 
 
@@ -71,20 +71,20 @@ MASTER[32],SALT[8] = random_data[40] ^ ENTROPY[40]
 
 
 ### Input description
- | Field | Size [B] | Description | 
- | --- | ------ | ---------- |  
- | `ENTROPY` | 40 | Client-sourced bytes to be mixed with HWRNG result |  
+| Field     | Size [B] | Description                                        |
+|-----------|----------|----------------------------------------------------|
+| `ENTROPY` | 40       | Client-sourced bytes to be mixed with HWRNG result |
 
 ### Output description
-| Field | Size [B] | Description |
-| --- | ------ | ---------- | 
-| `MASTER` | 32 | Nitrokey Webcrypt's *Master Secret* |
-| `SALT` | 8 | Salt |
+| Field    | Size [B] | Description                         |
+|----------|----------|-------------------------------------|
+| `MASTER` | 32       | Nitrokey Webcrypt's *Master Secret* |
+| `SALT`   | 8        | Salt                                |
 
 
 ### Errors
-| ID | Mnemonic | Description |
-| --- | ------ | ---------- | 
+| ID   | Mnemonic                | Description                   |
+|------|-------------------------|-------------------------------|
 | 0xF5 | ERR_FAILED_LOADING_DATA | Error during preparing output |
 
 
@@ -92,9 +92,9 @@ MASTER[32],SALT[8] = random_data[40] ^ ENTROPY[40]
 
 
 ## Restore from seed (RESTORE_FROM_SEED)
-| ID | Mnemonic | Parameters | Returns | Au | Bt |
-| --- | ------ | ---------- | ---------- | --- | --- |
-| 0x11 | RESTORE_FROM_SEED | `{MASTER,SALT}` | `{HASH}` | + | + |
+| ID   | Mnemonic          | Parameters      | Returns  | Au  | Bt  |
+|------|-------------------|-----------------|----------|-----|-----|
+| 0x11 | RESTORE_FROM_SEED | `{MASTER,SALT}` | `{HASH}` | +   | +   |
 
 Sets Nitrokey Webcrypt's secret values as received from the caller. For verification calculates SHA256 hash of the input and returns as `HASH`. 
 
@@ -104,20 +104,20 @@ HASH = SHA256(MASTER|SALT)
 ```
 
 ### Input description
-| Field | Size [B] | Description |
-| --- | ------ | ---------- | 
-| `MASTER` | 32 | Nitrokey Webcrypt's Master Secret |
-| `SALT` | 8 | Salt |
+| Field    | Size [B] | Description                       |
+|----------|----------|-----------------------------------|
+| `MASTER` | 32       | Nitrokey Webcrypt's Master Secret |
+| `SALT`   | 8        | Salt                              |
 
 ### Output description
-| Field | Size [B] | Description |
-| --- | ------ | ---------- | 
-| `HASH` | 32 | SHA256 hash of the sent `MASTER+SALT` |
+| Field  | Size [B] | Description                           |
+|--------|----------|---------------------------------------|
+| `HASH` | 32       | SHA256 hash of the sent `MASTER+SALT` |
 
 ### Errors
-| ID | Mnemonic | Description |
-| --- | ------ | ---------- | 
-| 0xF3 | ERR_BAD_FORMAT | Incoming data are malformed |
+| ID   | Mnemonic                | Description                   |
+|------|-------------------------|-------------------------------|
+| 0xF3 | ERR_BAD_FORMAT          | Incoming data are malformed   |
 | 0xF5 | ERR_FAILED_LOADING_DATA | Error during preparing output |
 
 
@@ -259,10 +259,13 @@ To discuss:
 | --- | ------ | ---------- |---------------------| --- | --- |
 | 0x13 | SIGN | `{HASH,KEYHANDLE}` | `{SIGNATURE,INHASH}` | + | + |
 
-Using key encoded in `KEYHANDLE` parameter command makes signature over the input hash `HASH` using ECDSA. Returns `SIGNATURE` as a result, as well as the incoming hash `HASH`. 
+
+Returns `SIGNATURE` as a result, as well as the incoming hash `HASH`.
 `KEYHANDLE` authenticity (whether it was generated with given *Master Key* and to use for given *Origin*) is verified before use.
 Incoming `HASH` data is repeated on the output for signature confirmation.
-The curve used by default is `secp256r1` (NIST P-256 Random). 
+See the wrapping algorithm in the Key Handle description chapter.
+
+The type of the `SIGNATURE` signature depends on the used key algorithm, encoded in the keyhandle.
 
 In pseudocode:
 ```text
@@ -270,7 +273,16 @@ SIGNATURE = Sign(KEYHANDLE, hash)
 INHASH = HASH
 ```
 
-See the wrapping algorithm in the Key Handle description chapter.
+
+### ECC keys
+Using key encoded in `KEYHANDLE` parameter command makes signature over the input hash `HASH` using ECDSA.  
+The curve used by default is `secp256r1` (NIST P-256 Random). 
+
+
+
+### RSA keys
+Signing operation for RSA keys uses PKCSv15 padding and SHA256 as the hash.
+The only supported size for the RSA keys is RSA 2048.
 
 To implement:
 - Support `secp256k1` curve (NIST P-256 Koblitz).
@@ -300,12 +312,17 @@ To implement:
 
 
 ## Decrypt (DECRYPT)
-| ID | Mnemonic | Parameters | Returns | Au | Bt |
-| --- | ------ | ---------- | ---------- | --- | --- |
-| 0x14 | DECRYPT | `{DATA,KEYHANDLE,HMAC,ECCEKEY}` | `{DATA}` | + | + |
+| ID   | Mnemonic | Parameters                          | Returns  | Au  | Bt  |
+|------|----------|-------------------------------------|----------|-----|-----|
+| 0x14 | DECRYPT  | `{DATA,KEYHANDLE,[HMAC,ECCEKEY]}` | `{DATA}` | +   | +   |
 
-Decrypts data given in the `DATA` field, using `KEYHANDLE` *Key Handle* for regenerating the private key, and `ECCEKEY` ephemeral ECC public key for deriving the shared secret using ECDH. Before that this command verifies the data by calculating HMAC over all the fields and comparing with incoming `HMAC` field.
+
+The type of the operation done on the `DATA` ciphertext depends on the used key algorithm, encoded in the keyhandle.
 `KEYHANDLE` authenticity (whether it was generated with given *Master Key* and to use for given *Origin*) is verified before use.
+See the wrapping algorithm in the Key Handle description chapter.
+
+### ECC keys
+Decrypts data given in the `DATA` field, using `KEYHANDLE` *Key Handle* for regenerating the private key, and `ECCEKEY` ephemeral ECC public key for deriving the shared secret using ECDH. Before that this command verifies the data by calculating HMAC over all the fields and comparing with incoming `HMAC` field.
 
 Requires PKCS#7 ([RFC 5652]) padded data to the length of multiple of 32.
 
@@ -318,21 +335,30 @@ if hmac_calc != HMAC: abort
 plaintext = Decrypt(AES256, shared_secret, DATA)
 ```
 
-
-See the wrapping algorithm in the Key Handle description chapter.
-
-
 [RFC 5652]: https://tools.ietf.org/html/rfc5652#section-6.3
+
+
+### RSA keys
+Decrypts data given in the `DATA` field, using `KEYHANDLE` *Key Handle* for regenerating the private key.
+`KEYHANDLE` authenticity (whether it was generated with given *Master Key* and to use for given *Origin*) is verified before use.
+The ciphertext should be encoded with PKCS#1v15 padding. `HMAC` and `ECCEKEY` should not be provided.
+HMAC is not checked. 
+
+Pseudocode:
+```text
+plaintext = Decrypt(RSA2048, KEYHANDLE, DATA)
+DATA = plaintext
+```
 
 
 
 ### Input description
-| Field        | Size [B] | Description |
-|--------------|----------| ---------- | 
-| `DATA`       | 32-128*  | Data to decrypt |
-| `KEYHANDLE`  | 250      | Key handle |
-| `HMAC`       | 32       | Calculated HMAC |
-| `ECCEKEY`    | 64       | Raw ECC public key |
+| Field        | Size [B] | Description                   |
+|--------------|----------|-------------------------------| 
+| `DATA`       | 32-128*  | Data to decrypt               |
+| `KEYHANDLE`  | 250+     | Key handle                    |
+| `HMAC`       | 32     | Calculated HMAC (ECC only)      |
+| `ECCEKEY`    | 64     | Raw ECC public key (ECC only)   |
 
 ### Output description
 | Field | Size [B] | Description |
@@ -503,47 +529,45 @@ None
 
 ## Resident Keys Handling
 
-| ID     | Mnemonic        | Parameters  | Returns         | Au   | Bt   |
-|--------|-----------------|-------------|-----------------|------|------|
-| 0x16 | GENERATE_RESIDENT_KEY    | None                            | `{PUBKEY,KEYHANDLE}`                    | + | + |
-| 0x17 | READ_RESIDENT_KEY_PUBLIC | `{KEYHANDLE}`                   | `{PUBKEY,KEYHANDLE}`                    | + | + |
-| 0x18 | DISCOVER_RESIDENT_KEYS   | TBD                             | TBD                                     | + | + |
-| 0x19 | WRITE_RESIDENT_KEY       | `{RAW_KEY_DATA}`                | `{PUBKEY,KEYHANDLE}`                    | + | + |
+| ID   | Mnemonic                 | Parameters                  | Returns              | Au  | Bt  |
+|------|--------------------------|-----------------------------|----------------------|-----|-----|
+| 0x16 | GENERATE_RESIDENT_KEY    | None                        | `{PUBKEY,KEYHANDLE}` | +   | +   |
+| 0x17 | READ_RESIDENT_KEY_PUBLIC | `{KEYHANDLE}`               | `{PUBKEY,KEYHANDLE}` | +   | +   |
+| 0x18 | DISCOVER_RESIDENT_KEYS   | TBD                         | TBD                  | +   | +   |
+| 0x19 | WRITE_RESIDENT_KEY       | `{RAW_KEY_DATA,[KEY_TYPE]}` | `{PUBKEY,KEYHANDLE}` | +   | +   |
+
 
 Resident Keys (RK) are the keys stored on the device, allowing to be identified with a shorter keyhandle, or instead used as a storage means for the Relying Party, relieving it from the keeping of the secret material completely.
-Resident Keys can be generated, imported and used in the same way as their derived counterparts with the SIGN and DECRYPT commands. 
+Resident Keys can be generated, imported and used in the same way as their derived counterparts with the SIGN and DECRYPT commands.
+
 
 Detailed description:
-- GENERATE_RESIDENT_KEY - generates a RK on the device using local means, and returns a keyhandle to it;
+- GENERATE_RESIDENT_KEY - generates a RK on the device using local means, and returns a keyhandle to it (ECC only);
 - READ_RESIDENT_KEY_PUBLIC - allows to read a public key of the given RK;
-- DISCOVER_RESIDENT_KEYS - lists all the RKs available for the given Relying Party;
+- DISCOVER_RESIDENT_KEYS - lists all the RKs available for the given Relying Party (work in progress);
 - WRITE_RESIDENT_KEY - writes raw key data, as received from the RP, and returns a keyhandle to it.
 
 
 ### Input description
 
-| Field           | Size [B] | Description                                                       | 
-|-----------------|----------|-------------------------------------------------------------------|  
-| `KEYHANDLE`     | 250      | The keyhandle bytes, allowing to either identify the Resident Key |
-| `RAW_KEY_DATA`  | 32       | Raw key data, to be saved as a Resident Key                       |
+| Field          | Size [B] | Description                                                                                 | 
+|----------------|----------|---------------------------------------------------------------------------------------------|  
+| `KEYHANDLE`    | 250+     | The keyhandle bytes, allowing to either identify the Resident Key or the Derived Key        |
+| `RAW_KEY_DATA` | 32+      | Raw key data, to be saved as a Resident Key. RSA raw keys have to be encoded in PKCS#8 DER. |
+| `KEY_TYPE`     | 2        | Key type, encoded in int16: 0 = P256 , 1 = RSA 2K. Optional. Default: 0.                    |
 
 ### Output description
 
-| Field          | Size [B]  | Description                                                       |
-|----------------|-----------|-------------------------------------------------------------------| 
-| `PUBKEY`       | 32        | The calculated public key for the given keyhandle                 |
-| `KEYHANDLE`    | 250       | The keyhandle bytes, allowing to either identify the Resident Key |
+| Field          | Size [B] | Description                                                                                 |
+|----------------|----------|---------------------------------------------------------------------------------------------| 
+| `PUBKEY`       | 65+       | The calculated public key for the given keyhandle. RSA public key is encoded in PKCS#8 DER. |
+| `KEYHANDLE`    | 250+     | The keyhandle bytes, allowing to either identify the Resident Key or the Derived Key        |
 
 ### Errors
 
 | ID      | Mnemonic                | Description                   |
 |---------|-------------------------|-------------------------------| 
 | 0xF5    | ERR_FAILED_LOADING_DATA | Error during preparing output |
-
-
-
-
-
 
 
 
