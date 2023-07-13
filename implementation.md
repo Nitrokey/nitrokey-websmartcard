@@ -1,8 +1,8 @@
 # Nitrokey Webcrypt Implementation Documentation
 
-This is a documentation of the implemented Nitrokey Webcrypt interface in the Nitrokey 3. Below a high level description of the commands, as well as low-level protocol details can be found. 
-
-Note: this implementation is early and is subject to change.
+This documentation provides an overview of the implemented Nitrokey Webcrypt interface in Nitrokey 3. It includes
+high-level descriptions of the commands and low-level protocol details. Please note that this implementation is in the
+early stages and may undergo changes in the future.
 
 ## Commands Overview Table
 
@@ -43,7 +43,7 @@ Where for the given command:
 - column `Au`, short from authentication, marks authentication requirement with the `LOGIN` command, before using this command;
 - column `Bt`, short from button, marks touch-button press requirement after the command is called, to proceed further.
 
-
+Note that OpenPGP specific commands are missing from this description (to be updated).
 
 
 ## Initialize (INITIALIZE_SEED)
@@ -692,45 +692,83 @@ This packet should be provided as an argument for the Webauthn MakeAssertion's `
 
 
 # FIDO2 actions relationship
-Following are connections between the FIDO2 and Nitrokey Webcrypt:
+The following are connections between the FIDO2 and Nitrokey Webcrypt:
 - On FIDO2 factory reset the Nitrokey Webcrypt's secrets should be reinitialized to random values. 
 - The PIN is shared between the FIDO2 and Nitrokey Webcrypt. 
-- The secrets are separeted, and never cross-used between FIDO2 and Nitrokey Webcrypt. 
+- The secrets are separated and never cross-used between FIDO2 and Nitrokey Webcrypt. 
 - The FIDO2 PIN attempt counter should decrease on failed login over Nitrokey Webcrypt.
 - The FIDO2 use counter should not change during the use of Nitrokey Webcrypt.
 
-# JS handling
+# Javascript Usage
 
-Javascript interface reuses regular FIDO2 calls realized through `navigator.credentials.get()`.
-See details at [Webauthn-intro].
-Encoding and decoding functions will be shared at a later stage (Milestone 7). 
-
-[Webauthn-intro]: https://www.w3.org/TR/webauthn/#intro
+Below is an example of Javascript API usage with OpenPGP.js.
 
 ```typescript
 
-  const keyhandle = encode_ctaphid_request_as_keyhandle(cmd, addr, data);
-  const challenge = window.crypto.getRandomValues(new Uint8Array(32));
+    class WebCryptHardwareKeysPlugin {
+      async serialNumber() {
+        return new Uint8Array(16).fill('A'.charCodeAt(0));
+      }
 
-  const request_options:PublicKeyCredentialRequestOptions = {
-      challenge: challenge,
-      allowCredentials: [{
-          id: keyhandle,
-          type: 'public-key',
-      }],
-      timeout: timeout,
-      userVerification: "required"  // for FIDO2 PIN verification
-      // userVerification: "discouraged"    // for FIDO U2F compatibility
-  }
+      date() {
+        return this.webcrypt_date ? new Date(this.webcrypt_date) : new Date(2019, 1, 1);
+      } // the default WebCrypt date for the created keys
 
-  try {
-        const result = await navigator.credentials.get({
-            publicKey: request_options
-        });
-        const response = decode_ctaphid_response_from_signature(assertion.response!);
-        return response.data;
-  }
-  catch (error){
-        return Promise.resolve();  // error;
-  };
+      async init() {
+        if (this.public_sign === undefined) {
+          await WEBCRYPT_LOGIN(WEBCRYPT_DEFAULT_PIN, statusCallback);
+          const res = await WEBCRYPT_OPENPGP_INFO(statusCallback);
+          this.public_encr = res.encr_pubkey;
+          this.public_sign = res.sign_pubkey;
+          this.webcrypt_date = res.date;
+        }
+      }
+
+      async agree({ curve, V, Q, d }) {
+        console.log({ curve, V, Q, d });
+        const agreed_secret = await WEBCRYPT_OPENPGP_DECRYPT(statusCallback, V);
+        return { secretKey: d, sharedKey: agreed_secret };
+      }
+
+      async sign({ oid, hashAlgo, data, Q, d, hashed }) {
+        const res = await WEBCRYPT_OPENPGP_SIGN(statusCallback, data);
+        const resb = hexStringToByte(res);
+        const r = resb.slice(0, 32);
+        const s = resb.slice(32, 64);
+        const reso = { r, s };
+        return reso;
+      }
+
+      async generate({ algorithmName, curveName, rsaBits }) {
+        let selected_pk = this.public_sign;
+        if (algorithmName === openpgp.enums.publicKey.ecdh) {
+          selected_pk = this.public_encr;
+          console.warn(`Selecting subkey: ${selected_pk} for encryption`);
+        } else if (algorithmName === openpgp.enums.publicKey.ecdsa) {
+          console.warn(`Selecting main: ${selected_pk} for signing`);
+        } else {
+          console.error(`Not supported algorithm: ${algorithmName}`);
+          throw new Error(`Not supported algorithm: ${algorithmName}`);
+        }
+        return { publicKey: selected_pk, privateKey: null };
+      }
+    }
+
+    const plugin = new WebCryptHardwareKeysPlugin();
+
+    WebcryptConnection(statusCallback){
+        await Webcrypt_Logout(statusCallback);
+        await Webcrypt_FactoryReset(statusCallback);
+        await Webcrypt_Status(statusCallback);
+        await Webcrypt_SetPin(statusCallback, new CommandSetPinParams(new_pin));
+        await Webcrypt_Login(statusCallback, new CommandLoginParams(new_pin));
+        await plugin.init();
+        const { privateKey: webcrypt_privateKey, publicKey: webcrypt_publicKey } = await openpgp.generateKey({
+            curve: 'p256',
+            userIDs: [{ name: 'Jon Smith', email: 'jon@example.com' }],
+            format: 'object',
+            date: plugin.date(),
+            config: { hardwareKeys: plugin }
+      });
+    }
 ```

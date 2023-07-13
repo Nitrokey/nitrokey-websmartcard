@@ -2,162 +2,310 @@
 
 ## Summary
 
-Nitrokey is an open source hardware USB key for data encryption and two-factor authentication with FIDO. While FIDO is supported by web browsers, using Nitrokey as a secure key store for email and (arbitrary) data encryption requires native software. Therefore email encryption in webmail has not been possible with the Nitrokey until now. At the same time strong end-to-end encryption in web applications all share the same challenge: To store users’ private keys securely and conveniently. Therefore secure end-to-end encryption usually requires native software as well (e.g. instant messenger app) or – less secure – store the user keys password-encrypted on servers. Nitrokey aims to solve these issues by developing a way to use Nitrokey with web applications. To avoid the necessity of device drivers, browser add-on or separate software this project is going to utilize the FIDO (CTAP) protocol. As a result the solution will work with any modern browser (which all support WebAuthn), on any operating system even on Android. This will give any web application the option to store a users’ private keys locally on a Nitrokey they control.
+The Nitrokey is an open-source hardware USB key that provides data encryption and two-factor authentication capabilities
+using FIDO standards. While FIDO is supported by web browsers, utilizing the Nitrokey as a secure key store for email
+and data encryption has traditionally required native software. As a result, email encryption within webmail using the
+Nitrokey has not been possible until now.
+
+Similarly, achieving strong end-to-end encryption in web applications has faced a common challenge: securely and
+conveniently storing users' private keys. This typically requires native software, such as an instant messenger app, or
+less secure methods, such as storing password-encrypted user keys on servers. To address these issues, Nitrokey aims to
+enable the use of Nitrokey with web applications.
+
+To eliminate the need for device drivers, browser add-ons, or separate software, the Nitrokey project leverages the
+FIDO (CTAP) protocol. By utilizing this protocol, the solution can work with any modern browser that supports WebAuthn,
+on any operating system, including Android. Consequently, web applications gain the capability to store users' private
+keys locally on a Nitrokey that remains under their control.
 
 ## Terminology
 
-* *Device* refers to a WebCrypt-compliant device, which usually is in the possession of a user and connected via USB, NFC or Bluetooth.
-* *Web application* is Javascript-based application, running in browser and potentially communicating between it and the servers in the internet.
-* *Client software* is any software communicating with the WebCrypt-compliant device, directly or through a browser. 
-* *Browser* is one of the platforms running the *Client software*.
-* *Main key* is the main secret key stored on the device. Can be represented by *Word Seed* for backup purposes.
-* *Resident key* is different to FIDO's resident keys, but the concept is similar. Webcrypt's Resident Keys are stored on the device, created either by importing or generation.
-* *Derived key* is different to FIDO's derived keys, but the concept is similar. The keys are derived from the main secret and given service metadata like using RPID (including domain name) or users additional passphrase.
-* *Seed*, or *Word Seed*, is a 24-30 words closed-dictionary phrase, which allows to restore the *Main key* on any device.
-* *PIN* is an attempt-count limited password or passphrase, which unlocks the device and allows to run Webcrypt operations.
-* *Backup* is a data structure allowing to restore the state of the device on the same or another instance.
-* *KDF* stands for key derivation function and is a cryptographic hash function deriving a secret key from the input like passphrase using pseudorandom function.
+To ensure clarity and shared understanding, the following key terms are used throughout this documentation:
 
-## Solution
+1. **Device**: Refers to a WebCrypt-compliant device that is typically in the possession of a user and connected via
+   USB, NFC, or Bluetooth.
+2. **Web application**: A JavaScript-based application running in a web browser and capable of communicating with
+   servers over the internet.
+3. **Client software**: Any software that directly communicates with the WebCrypt-compliant device, either directly or
+   through a web browser.
+4. **Browser**: One of the platforms on which the client software runs.
+5. **Main key**: The primary secret key stored on the device, which can be represented by a Word Seed for backup
+   purposes.
+6. **Resident key**: While distinct from FIDO's resident keys (aka Discoverable Keys), the concept is similar.
+   WebCrypt's Resident Keys are stored on the device and can be created through importation or generation.
+7. **Derived key**: Although different from FIDO's derived keys, the concept is similar. Derived keys are generated from
+   the main secret key, along with service metadata such as the RPID (including the domain name) or the user's
+   additional passphrase.
+8. **Seed** or **Word Seed**: A phrase consisting of 24-30 words from a closed dictionary, enabling the restoration of
+   the main key on any device.
+9. **PIN**: A password or passphrase with a limited number of attempts, used to unlock the device and execute WebCrypt
+   operations.
+10. **Backup**: A data structure that facilitates the restoration of the device's state on the same or a different
+    instance.
+11. **KDF**: Short for Key Derivation Function, it refers to a cryptographic hash function that derives a secret key
+    from an input, such as a passphrase, using a pseudorandom function.
 
-* This solution is inspired by [OnlyKey’s WebCrypt](https://crp.to/2017/11/introduction-onlykey-webcrypt/) proof-of-concept.
-* [CTAP2 (FIDO2)](https://fidoalliance.org/specs/fido-v2.0-ps-20190130/fido-client-to-authenticator-protocol-v2.0-ps-20190130.html) is used for future-proofness and avoiding incompatibilities in the long run. [CTAP1 (FIDO U2F)](https://fidoalliance.org/specs/fido-u2f-v1.2-ps-20170411/fido-u2f-raw-message-formats-v1.2-ps-20170411.html) may be added for backward-compatibility.
-* To reduce complexity and increase usability, we focus on ECC only. RSA may be added later and be used only for importing existing keys.
-* Hence, integration with GNUK is not important. Given conflicting licenses, we aim to implement an own OpenPGP Card interface optionally.
-* Solution should work via USB and NFC and ordinary web browser.
+Please refer to these defined terms throughout the documentation to ensure a consistent understanding of their meanings.
 
-### Keys
+# Solution
 
-This solution will support multiple keys. Keys can be derived on the fly from a main key or imported and stored in the device (resident keys). All key operations (sign, decrypt) require the public key as a parameter. These operations follow this scheme:
-1) Check if public key or key handle matches any stored (resident) key and origin. If not, continue with step 2, otherwise step 3.
-2) Derive key: key = KDF(main key, key_handle, origin) and verify it's validity against HMAC.
-3) Compute key operation with payload.
-4) Return result.
+## Implementation Details
 
-* Keys' attributes contain usage flag: encryption/decryption, signing, and both. (TODO: Should this be delegated to web application via key handle or key ID?)
-* Main key is 256 bit long.
+The implementation of Nitrokey WebCrypt incorporates the following design considerations:
 
-#### Cross and same origin keys
+1. **Inspiration from OnlyKey's WebCrypt**: The solution draws inspiration from OnlyKey's WebCrypt proof-of-concept,
+   leveraging its concepts and ideas.
 
-Keys can be configurable to be used per-origin only which avoids a (potential) privacy risk. Use cases where keys are used among different origins (e.g. email encryption) can disable this option for their keys.
+2. **CTAP2 (FIDO2) Compliance**: To ensure future-proofness and compatibility, Nitrokey WebCrypt utilizes CTAP2 (FIDO2)
+   and newer specifications. This choice mitigates potential incompatibilities in the long run. Additionally, for
+   backward compatibility (optional), CTAP1 (FIDO U2F) may be included.
 
-For same-origin resident keys, the origin is stored along with the secret key. When accessing the key and an origin is stored (hence, it's a same-origin key), the device verifies the origin.
+3. **Focus on ECC Algorithms**: To simplify usage and enhance usability, Nitrokey WebCrypt primarily focuses on elliptic
+   curve cryptography (ECC) algorithms. The support for RSA is provided as an optional feature, specifically for key
+   importing and utilization of existing keys.
 
-For same-origin derived keys, the origin is provided as input to the KDF. This way same-origin and cross-origin cases result in different keys.
+4. **OpenPGP Card Interface**: The OpenPGP Card interface is planned to be realized through opcard-rs, our Open Source
+   software
+   implementation, supported by a hardware Secure Element, ensuring secure operations.
 
-When calling an operation, the web application chooses (by parameter) if a same-origin or cross-origin key is addressed. The actual origin is provided by the browser (not by the web application).
+5. **Support for USB, NFC, and Web Browsers**: Nitrokey WebCrypt is designed to seamlessly work with WebCrypt-compliant
+   devices via USB and NFC connections. Furthermore, it offers compatibility with standard web browsers, enabling broad
+   accessibility and usage across different platforms.
 
-### PIN
+By adhering to these implementation details, Nitrokey WebCrypt aims to provide a robust, secure, and user-friendly
+experience for developers leveraging its functionalities.
 
-The PIN is required to authenticate the user during authorizing key operations. I suggest that it be made configurable if a) the PIN is required for every operation or b) PIN is required only once per device session. In any case, a touch confirmation (button press) is required to authorize every sign and decrypt operation.
+## User Keys
 
-We use WebAuthn's PIN mechanism because it promises better interoperability and higher security (PIN is not exposed to JavaScript). The caveat is that this will work with MS Edge only for now. We expect other web browsers will support PIN handling in the future. For now we may need to have it backward compatible and handle the PIN entry in JavaScript. This will be a configuration option so that Edge-only users could disable it and therefore protect their device PIN from DoS.
+The user keys feature of this solution provides support for multiple keys, which can be derived dynamically from a main
+key or imported and securely stored as resident keys on the device. All key operations, such as signing and decryption,
+require the corresponding public key to be provided as a parameter. The key operations follow the following scheme:
 
-### Backup and Seed
+1) First, the system checks if a public key or key handle matches any stored (resident) key and origin. If there is no
+   match, the process continues with step 2. If there is a match, the process proceeds to step 3.
 
-The seed is setup during initializing the device and used to derive a master key which is used to derive keys (and as a source to encrypt resident keys). All device-generated keys can be re-generated by providing the seed, which acts as a backup. A seed allows to recover the entire device on its own. The only exception are keys which are imported by the user. Those are not restored by the seed but it's assumed that a key backup exists already. [Here is a POC](https://github.com/skeeto/passphrase2pgp) for generating ECC keys from passphrase/seed, and storing them in an OpenPGP format.
+2) In step 2, the key is derived using the key derivation function (KDF) with the main key, key handle, and origin as
+   inputs. The derived key is then verified for validity against the HMAC.
 
-### Commands
+3) Once the key is derived and verified, the key operation is computed using the payload.
 
-* Initialize or restore from seed
-* Generate non-resident key
-* Write resident key - for externally existing keys only
-* Read public key of resident and derived keys
-* Sign(to_be_signed_data_hash, key_handle, HMAC, origin)
-* Decrypt(to_be_decrypted_data, key_handle, HMAC, origin)
-* Status (Unlocked, version, available resident key slots)
-* Configure (see above)
-* Unlock - For U2F compatibility.
-* Reset - For U2F compatibility.
+4) Finally, the result of the key operation is returned.
+
+Additional information:
+
+- Each key's attributes include a usage flag indicating whether it is meant for encryption/decryption, signing, or both.
+- The main key used in the derivation process is 256 bits in length.
+
+Note: The derivation algorithm is currently a work in progress and subject to ongoing development and refinement.
+
+#### Cross and Same Origin Keys
+
+Nitrokey WebCrypt supports the configuration of keys for cross-origin or same-origin usage, allowing flexibility while
+addressing potential privacy risks. Use cases that involve sharing keys across different origins, such as email
+encryption, can choose to disable this option for their specific keys.
+
+For same-origin resident keys, the associated origin is securely stored along with the secret key on the device. When
+accessing a same-origin key, the device verifies the origin to ensure its validity.
+
+For same-origin derived keys, the origin is provided as input to the Key Derivation Function (KDF).
+As a result, same-origin and cross-origin scenarios yield distinct keys.
+
+When invoking a key operation, the web application specifies, via a parameter, whether a same-origin or cross-origin key
+should be utilized. The browser, rather than the web application, provides the actual origin information, ensuring
+accurate and secure origin determination.
+
+#### User Authentication and PIN Mechanism
+
+The PIN serves as a crucial authentication factor for users when authorizing key operations within Nitrokey WebCrypt. It
+can be configured to operate in either of the following modes:
+
+1. **PIN Required for Every Operation**: In this mode, the PIN is required for authentication before every key
+   operation. This ensures heightened security but may involve repeated PIN entry for consecutive operations.
+
+2. **PIN Required Once per Device Session**: Alternatively, the PIN can be configured to be required only once per
+   device session. This option reduces the frequency of PIN entry during consecutive operations while maintaining the
+   necessary level of security. The PIN has to be entered for each Origin separately.
+
+3. **PIN Required Periodically**: Periodic PIN requirement for enhanced security. Once the PIN is initially entered and
+   authenticated, the device will accept all commands originating from the authenticated origin for a specified period
+   of time. This period is determined by a timeout mechanism, which can be set as a constant value or calculated based
+   on the duration since the last action. This approach strikes a balance between user convenience and security,
+   minimizing the need for repetitive PIN entry while maintaining the necessary level of protection.
+
+In either case, every sign and decrypt operation requires touch confirmation, typically in the form of a button press,
+to authorize the operation. This additional step ensures explicit user consent for sensitive operations.
+
+To ensure both interoperability and enhanced security, Nitrokey WebCrypt utilizes WebAuthn's PIN mechanism. This choice
+provides the advantage of improved compatibility across different platforms and, importantly, prevents the exposure of
+the PIN to JavaScript, thereby bolstering security.
+
+For backward compatibility and to accommodate FIDO U2F handling, there may be an option to unlock a device with a PIN
+passed through the JavaScript application. However, it's important to note that this configuration option is designed to
+be user-controlled.
+However, due to the widespread adoption of FIDO2, we are considering removing support for FIDO U2F and its associated
+commands. As FIDO2 gains popularity, it has become the preferred standard for secure authentication. This shift allows
+us to streamline our implementation and focus solely on supporting FIDO2 functionalities. By aligning with the
+prevailing industry standard, we can ensure better compatibility and improved user experience for our users.
+
+#### Seed and Key Generation
+
+During device initialization, Nitrokey WebCrypt establishes a seed, which serves as the foundation for deriving a main
+key and an encryption key. The main key is utilized to derive various keys, whereas encryption key functions as a
+source for encrypting resident keys.
+
+The seed holds significant importance as it enables the regeneration of all device-generated keys (except for the
+Resident Keys). By providing the seed, users can restore the entire derived keys hierarchy, effectively serving as a
+backup mechanism. It is important to note that this restoration capability applies exclusively to derived keys. Keys
+that are imported by the user, or generated to be stored on device (Resident Keys) are not restored through the seed;
+instead, it is assumed that a backup of such keys already exists.
+
+For generating ECC keys from a passphrase/seed and storing them in an OpenPGP format, you can refer to the Proof of
+Concept (POC) available [here](https://github.com/skeeto/passphrase2pgp). This POC demonstrates the process of
+generating ECC keys and their storage in an OpenPGP-compatible format.
+
+## Commands
+
+This solution supports the following commands:
+
+1) **Initialize or Restore from Seed**: This command allows for the initialization of the system or the restoration of
+   its state from a seed.
+
+2) **Generate Non-Resident Key**: With this command, you can generate a non-resident key dynamically.
+
+3) **Write Resident Key**: This command is used to write resident keys to the device. It is primarily intended for
+   externally existing keys.
+
+4) **Read Public Key**: This command enables the retrieval of the public key associated with resident and derived keys.
+
+5) **Sign**: The sign command allows for the signing of data. It requires parameters such as the data hash to be signed,
+   the key handle, HMAC, and origin.
+
+6) **Decrypt**: This command is used for decrypting data. It takes parameters such as the data to be decrypted, the key
+   handle, HMAC, and origin.
+
+7) **Status**: The status command provides information about the system, including whether it is unlocked, the version,
+   and the number of available resident key slots.
+
+8) **Configure**: This command is used to configure various settings related to the solution. Detailed configuration
+   options can be found above.
+
+Optional commands for FIDO U2F compatibility (when FIDO2 method is not available):
+
+9) **Unlock**: This command is provided for compatibility with FIDO U2F. It allows for unlocking the system when
+   necessary.
+
+10) **Reset**: This command is provided for compatibility with FIDO U2F. It allows for resetting the system when
+    required.
+
+### OpenPGP-like Commands
+
+In addition to the previously mentioned commands, this solution also provides a separate set of commands specifically
+designed for OpenPGP-like support, particularly for the OpenPGP.js case. These commands enable compatibility and
+integration with OpenPGP.js functionality. The specific commands available for OpenPGP-like support include:
+
+1) **OpenPGP Initialize or Restore**: This command initializes the system or restores its state specifically for OpenPGP
+   support using OpenPGP.js.
+
+2) **OpenPGP Encrypt**: With this command, you can encrypt data using OpenPGP encryption standards.
+
+3) **OpenPGP Decrypt**: This command allows for the decryption of OpenPGP encrypted data.
+
+4) **OpenPGP Sign**: Use this command to sign data using OpenPGP signing mechanisms.
+
+5) **OpenPGP Verify**: This command verifies the signature of OpenPGP signed data.
+
+6) **OpenPGP Key Management**: This set of commands facilitates key management operations specific to OpenPGP, such as
+   generating OpenPGP keys, importing and exporting keys, and managing key attributes.
+
+These OpenPGP-like commands are tailored to support seamless integration with OpenPGP.js and enable the utilization of
+OpenPGP encryption and signing capabilities.
+
+## Use Cases
+
+1. **User-to-User Communication**
+    - **Email**: The library supports encrypted and authenticated email, following a scheme similar to the OpenPGP smart
+      card scheme.
+    - **Chats**: Users can establish secure communication channels using keys per recipient, per channel, or per
+      day/session. This functionality is comparable to popular secure messaging applications such as Signal and Element.
+    - **Sharing Encrypted Files or Text**: The library enables secure sharing of encrypted files or text, similar to
+      encrypted pastebin services and Firefox Send.
+
+2. **User Data Ownership**
+    - The library facilitates the operation of platforms that prioritize user data ownership. Instead of storing data on
+      their own servers, platforms using this library store the data on the user's device. This allows for seamless data
+      transfer to other services and simplifies the process of migrating an account between servers. By executing
+      processing tasks on the user's device, such as a USB security key and JavaScript application, the service operator
+      removes the responsibility of storing user data and mitigates the legal consequences of cross-border data
+      transfers.
+
+3. **Authentication**
+    - The library provides authentication capabilities similar to FIDO2, allowing users to establish secure and reliable
+      authentication mechanisms.
+
+4. **Secure Payments**
+    - Users can leverage the library to facilitate secure payment transactions, ensuring the confidentiality and
+      integrity of sensitive financial information.
+
+5. **Password Replacement**
+    - The library offers a password replacement mechanism by utilizing derived Public Keys and a single passphrase,
+      which can serve as a backup seed phrase. This approach enhances security by reducing reliance on traditional
+      passwords and simplifying the authentication process.
+
+6. **Encrypted Internet**
+    - With Nitrokey WebCrypt, users can access encrypted web pages that are decrypted exclusively on their own devices
+      through a JavaScript application. This ensures that the data remains encrypted throughout the transmission and is
+      decrypted only on the user's host.
+
+7. **Use of Unsecure or Third-Party Platforms for Data Storage**
+    - The library empowers users to utilize unsecure or third-party platforms for sending and storing data, including
+      backups. By encrypting the data using the library's functionality, users can maintain the security and privacy of
+      their information, even when using platforms that may not provide inherent security measures.
+
+8. **Sending Encrypted Messages through Any Channel using Webextension or Android Application**
+    - Nitrokey WebCrypt empowers users to establish their own secure end-to-end encrypted channels for sending messages
+      through any channel using a Webextension or Android application.
+
+9. **Hierarchical Deterministic Password Manager**
+
+    - Nitrokey WebCrypt includes a feature for a Hierarchical Deterministic Password Manager. This password management
+      functionality generates passwords deterministically based on a main secret, domain name, and optionally, a login (
+      for multiple accounts per service). By leveraging this capability, users can consolidate all their passwords on a
+      single device and regenerate them just using the main secret.
+
+      Additional features of the Hierarchical Deterministic Password Manager include:
+
+        - **User-Chosen Number or Passphrase**: Users can provide a user-chosen number or passphrase to generate
+          subsequent passphrases. This feature is particularly useful for complying with third-party services that
+          require frequent password changes.
+
+        - **Additional Passphrase for Enhanced Protection**: Users have the option to use an additional passphrase for
+          extra protection. If an adversary attempts to force the passphrase from the user, not providing this
+          additional passphrase will generate a different password, thereby safeguarding against unauthorized access.
+
+Please refer to the implementation sections for detailed information on how to implement these use cases using Nitrokey
+WebCrypt.
 
 ## Questions & Answers
 
-#### Reasoning for Derived Keys
+#### Advantages of Derived Keys
 
-Using derived keys (as opposed to resident keys) by default provides the following benefits:
+The use of derived keys, as the default approach over resident keys, offers several significant advantages:
 
-* For encryption use cases such as we want to enable with WebCrypt, a backup mechanism is a fundamental prerequisite. At the same time the entire solution should be as easy to use as possible. Therefore we aim to provide an easy to use backup mechanism. A seed phrase or backup phrase is the most easy mechanism we could think of. For technical reasons a backup seed demands derived keys in ECC format (not RSA). As opposed to a backup seed, a classical file backup would have these disadvantages:
-  * A backup file needs to be stored separately and (usually) protected with a passphrase.
-  * A new backup file needs to be created and stored again and again after generating a new key. 
-  * Practice proofs that backups are often not executed properly. This might result in user frustration when they can't access their encrypted data anymore.
-* Having a single or few resident keys might enable malicious websites to track users' devices which could violate their privacy. Therefore it's beneficial to assume derived keys as the default.
-* With resident keys, the amount of keys  (key storage) would be limited. As opposed to this an unlimited amount of derived keys could be used.
+1. **Backup Mechanism**: For encryption use cases, such as those enabled by WebCrypt, a backup mechanism is essential.
+   To ensure ease of use, we provide a user-friendly backup mechanism. A seed phrase or backup phrase serves as a
+   straightforward and accessible solution. From a technical perspective, a backup seed necessitates derived keys in ECC
+   format, as opposed to RSA. Compared to traditional file backups, a seed-based backup offers the following advantages:
+    * No separate storage or passphrase protection is required for a backup file.
+    * Generating a new key does not necessitate creating and managing a new backup file repeatedly.
+    * User experience is improved, as relying on backups alone often results in inadequate execution, potentially
+      leading to frustration and data inaccessibility.
 
-## Deliverables
+2. **Privacy Considerations**: The use of a single or a few resident keys could potentially enable malicious websites to
+   track users' devices, compromising their privacy. By defaulting to derived keys, we mitigate this risk and prioritize
+   user privacy.
 
-* Firmware containing the WebCrypt feature.
-* A JavaScript library to be used by arbitrary web applications to use Nitrokey WebCrypt. 
-* Optional: Patch to openpgp.js adding our WebCrypt library and make use of the device key store.
-* Documentation
+3. **Expanded Key Usage**: With resident keys, there is a limitation on the number of keys that can be stored, imposing
+   constraints on key storage. In contrast, derived keys allow for an unlimited number of keys, enabling more extensive
+   usage scenarios and offering greater flexibility.
 
-## Options
-
-* OpenPGP Card interface
-* RSA support
-* OpenPGP.js integration
-
-## Milestones
-
-### A. Firmware
-#### I. Establishing PoC
-* Communication layer over FIDO2. Estimation assumes no code reuse.
-* Initial design and structure for commands - Setting up code structure and design for commands and implementations
-* Initialize and restore from seed - Master seed handling. Additional time for security analysis. Basic tests included.
-* Generate non-resident key - Key generation. Additional time for security analysis. Basic tests included.
-* Sign(to_be_signed_data_hash, key_handle, HMAC, origin) - Expecting simple implementation. Basic tests included.
-* Decrypt(to_be_decrypted_data, key_handle, HMAC, origin) - Expecting simple implementation. Basic tests included.
-* Status (Unlocked, version, available resident key slots) - Expecting simple implementation. Basic tests included.
-* Additional firmware tests - Tests for everyday usage, edge cases, invalid use cases.
-
-#### II. Encrypted storage
-* Encrypted resident keys and master key (for derived keys) - for all user data entities
-
-#### III. Resident keys feature
-* Write resident key - for external keys only - Expecting simple implementation. Basic tests included.
-* Read public key of resident keys - Expecting simple implementation. Basic tests included.
-
-#### IV. FIDO U2F support
-* CTAP1 transport layer (for backward compatibility)
-* Unlock - For U2F compatibility - Expecting simple implementation. Basic tests included.
-* Reset - For U2F compatibility - Expecting simple implementation. Basic tests included.
-* Configure - U2F and other options - Expecting simple implementation. Basic tests included.
-  * PIN's use - each action, or once per session
-
-#### V. RSA support
-* RSA support - firmware side - tests included. For resident keys only.
-* RSA support - Nitrokey JS library - Add support to JS library
-* RSA support - OpenPGP.js - Add support to 3rd party JS library
-
-#### VI. NFC support
-* NFC tests and bug fixes - Tests for NFC interactions (PC/Mobile)
-
-#### B. JavaScript library for web applications
-* API design - API design for the JS Nitrokey WebCrypt library
-* API implementation - Library implementation
-* Tests: both automatic and manual Javascript tests
-* JS Demo Application - Demo application, similar to the OnlyKey’s demo + additional features if time permits
-
-#### C. Documentation
-* Firmware: Commands and Features - Examples of use (developers-centric, to pick-up framework)
-* JavaScript library - Focus on use cases
-
-## Extensions
-
-#### D. OpenPGP Card Interface
-* Basic integration - CCID (GnuPG + etc.) and our custom access, assuming Solo’s OpenPGP card integration.
-* ECDSA support - Signing function already provided, but the format parsing is to be implemented. Usable for ECC encryption.
-* ECC decryption
-* Feature completion and improvements of given implementation
-* Security review and improvements
-
-#### E. OpenPGP.js patch
-Patch for OpenPGP.js to use Nitrokey WebCrypt extension (to use our device as key storage, instead of host storage)
-
-* First implementation – decryption operation - JavaScript implementation of the library
-* Tests Javascript automatic and manual tests
-* Signing
-* Key handling:
-  * import
-  * generation
-* Reserved time for additional corrections, developers input
-* Documentation of OpenPGP patch changes - Documentation for OpenPGP.js developers/users, to be included by them
+By adopting derived keys as the default approach, Nitrokey WebCrypt ensures a user-friendly backup mechanism, enhances
+privacy protection, and enables a wider range of key usage possibilities.
