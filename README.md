@@ -32,6 +32,8 @@ channels like Bluetooth, NFC, and USB.
 As a result, web applications gain the capability to locally store users' private keys on a Nitrokey, ensuring users
 retain full control over their keys.
 
+Note: Nitrokey WebSmartCard was formerly known as Nitrokey WebCrypt.
+
 A demo application is available under:
 - https://webcrypt.nitrokey.com
 
