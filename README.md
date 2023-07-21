@@ -32,6 +32,11 @@ channels like Bluetooth, NFC, and USB.
 As a result, web applications gain the capability to locally store users' private keys on a Nitrokey, ensuring users
 retain full control over their keys.
 
+A demo application is available under:
+- https://webcrypt.nitrokey.com
+
+It can be used with any Nitrokey 3 device, which uses a "test" firmware, e.g. [v1.5.0-test.20230704](https://github.com/Nitrokey/nitrokey-3-firmware/releases/tag/v1.5.0-test.20230704).
+
 ## Terminology
 
 To ensure clarity and shared understanding, the following key terms are used throughout this documentation:
@@ -86,7 +91,8 @@ The implementation of Nitrokey WebSmartCard incorporates the following design co
    accessibility and usage across different platforms.
 
 By adhering to these implementation details, Nitrokey WebSmartCard aims to provide a robust, secure, and user-friendly
-experience for developers leveraging its functionalities.
+experience for developers leveraging its functionalities. Please refer to the [implementation](./implementation.md)
+sections for more detailed information.
 
 ### Communication Channel
 
@@ -316,7 +322,7 @@ integration with OpenPGP.js functionality. The specific commands available for O
 1) **OpenPGP Initialize or Restore**: This command initializes the system or restores its state specifically for OpenPGP
    support using OpenPGP.js.
 
-2) **OpenPGP Encrypt**: With this command, you can encrypt data using OpenPGP encryption standards.
+2) **OpenPGP Encrypt**: With this command, you can encrypt data using OpenPGP encryption standards. (planned)
 
 3) **OpenPGP Decrypt**: This command allows for the decryption of OpenPGP encrypted data.
 
