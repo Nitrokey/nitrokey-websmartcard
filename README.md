@@ -2,6 +2,8 @@
 
 ### Smart Cards for the Web!
 
+<!-- Demo app image placeholder -->
+![Demo application view](images/demo-application.png)
 
 ## Summary
 
