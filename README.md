@@ -77,7 +77,7 @@ The implementation of Nitrokey WebSmartCard incorporates the following design co
    importing and utilization of existing keys.
 
 4. **OpenPGP Card Interface**: The OpenPGP Card interface is integrated to facilitate the implementation of OpenPGP.js 
-   with the support of a hardware Secure Element, ensuring secure operations for this Javascript library.
+   with the support of a hardware Secure Element, ensuring secure operations for this JavaScript library.
 
 5. **Support for USB, NFC, and Web Browsers**: Nitrokey WebSmartCard is designed to seamlessly work with WebSmartCard-compliant
    devices via USB and NFC connections. Furthermore, it offers compatibility with standard web browsers, enabling broad
@@ -89,7 +89,7 @@ experience for developers leveraging its functionalities.
 ### Communication Channel
 
 The following sequence diagram illustrates the process of a high-level command exchange between Alice and a JavaScript Client
-Application, which communicates with the Nitrokey WebSmartCard API and the WebSmartCard Device (e.g. Nitrokey 3). The
+Application (with an optional communication to the Web Service, which Alice visits), which communicates with the Nitrokey WebSmartCard API and the WebSmartCard Device (e.g. Nitrokey 3). The
 communication involves multiple requests and responses using Webauthn/FIDO2/CTAP2 and encoded in CBOR. Ultimately, the
 result of the command is sent back to Alice.
 
@@ -97,15 +97,20 @@ result of the command is sent back to Alice.
 sequenceDiagram
     autonumber
     actor Alice
-    participant ClientApp as Javascript Client Application
-    participant API as Nitrokey WebSmartCard API
+    participant service as Web Service
+    box Web Browser
+       participant ClientApp as JavaScript Client Application
+       participant API as Nitrokey WebSmartCard API <br/> (JavaScript Library)
+    end
     participant Device as WebSmartCard Device <br/> (e.g. Nitrokey 3)
 
-    Alice->>ClientApp: High-level Command
+    Alice->>ClientApp: High-level command
+    ClientApp-->>service: Additional processing or <br/> data request (optional)
+    service-->>ClientApp: Result
     ClientApp->>API: Request
-    loop Communicating with the device over multiple requests
-    API->>Device: Request sent using Webauthn/FIDO2/CTAP2, <br /> CBOR encoded
-    Device->>API: Response sent using Webauthn/FIDO2/CTAP2, <br /> CBOR encoded
+    Loop Communicating with the device over multiple requests
+       API->>Device: Request sent using Webauthn/FIDO2/CTAP2, <br /> CBOR encoded
+       Device->>API: Response sent using Webauthn/FIDO2/CTAP2, <br /> CBOR encoded
     end
     API->>ClientApp: Response
     ClientApp->>Alice: Result
@@ -141,7 +146,7 @@ sequenceDiagram
     end
     box Bob's Equipment
        participant ClientApp as OpenPGP.js Client Application <br/> (Web Browser)
-       participant API as Nitrokey WebSmartCard API
+       participant API as Nitrokey WebSmartCard API <br/> (JavaScript library)
        participant Device as WebSmartCard Device <br/> (e.g. Nitrokey 3)
     end
 
