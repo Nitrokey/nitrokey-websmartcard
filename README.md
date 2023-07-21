@@ -65,7 +65,7 @@ Please refer to these defined terms throughout the documentation to ensure a con
 
 The implementation of Nitrokey WebSmartCard incorporates the following design considerations:
 
-1. **Inspiration from OnlyKey's WebSmartCard**: The solution draws inspiration from OnlyKey's WebSmartCard proof-of-concept,
+1. **Inspiration from OnlyKey's WebCrypt**: The solution draws inspiration from OnlyKey's WebCrypt proof-of-concept,
    leveraging its concepts and ideas.
 
 2. **CTAP2 (FIDO2) Compliance**: To ensure future-proofness and compatibility, Nitrokey WebSmartCard utilizes CTAP2 (FIDO2)
