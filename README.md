@@ -39,6 +39,10 @@ A demo application is available under:
 
 It can be used with any Nitrokey 3 device, which uses a "test" firmware, e.g. [v1.5.0-test.20230704](https://github.com/Nitrokey/nitrokey-3-firmware/releases/tag/v1.5.0-test.20230704).
 
+See all the connected projects at:
+- https://github.com/topics/nitrokey-webcrypt
+- https://github.com/topics/nitrokey-websmartcard
+
 ## Terminology
 
 To ensure clarity and shared understanding, the following key terms are used throughout this documentation:
